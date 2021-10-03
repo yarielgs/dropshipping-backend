@@ -243,6 +243,11 @@ public class ApiService implements IApiService {
     }
 
     @Override
+    public Object loadDescription(DescriptionRequest request, String token, String idPublicationMeli) throws ApiException {
+        return restClientApiUy.resourcePost(String.format(ApiResources.ITEMS + "/%s" + "/description", idPublicationMeli), token, request);
+    }
+
+    @Override
     public Object deletePublication(DeletePublicationRequest request, String token, String idPublicationMeli) throws ApiException {
         return restClientApiUy.resourcePut(String.format(ApiResources.ITEMS + "/%s", idPublicationMeli), token, request);
     }

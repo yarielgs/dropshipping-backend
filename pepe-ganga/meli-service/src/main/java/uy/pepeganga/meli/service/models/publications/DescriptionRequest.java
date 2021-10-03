@@ -7,8 +7,18 @@ import com.google.gson.annotations.SerializedName;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DescriptionRequest {
     public static final String SERIALIZED_NAME_PLAIN_TEXT = "plain_text";
+
+    public DescriptionRequest() {
+    }
+
+    public DescriptionRequest(String description) {
+        this.description = description;
+    }
+
     @SerializedName(SERIALIZED_NAME_PLAIN_TEXT)
     private String description;
+
+
 
     @JsonProperty("plain_text")
     public String getDescription() {

@@ -63,12 +63,6 @@ public class MeliController {
         return new ResponseEntity<>(meliService.updateAccountsEnabledOrDisabledFlexByAdmin(accountId, enableFlex), HttpStatus.OK);
     }
 
-
-    @PostMapping("/publications/{accountId}")
-    public ResponseEntity<Map<String, Object>> createPublication(@RequestBody Item item, @PathVariable Integer accountId){
-        return new ResponseEntity<>(meliService.createPublication(item, accountId), HttpStatus.CREATED);
-    }
-
     @PostMapping("/publications-flow/{accountId}")
     public ResponseEntity<Boolean> createPublicationsFlow(@RequestBody List<ItemModel> items, @PathVariable Integer accountId, @RequestParam Short idMargin){
         try {

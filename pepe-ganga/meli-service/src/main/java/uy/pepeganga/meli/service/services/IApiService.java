@@ -31,6 +31,8 @@ public interface IApiService {
 
     Object updateDescription(DescriptionRequest request, String token, String idPublicationMeli) throws ApiException;
 
+    Object loadDescription(DescriptionRequest request, String token, String idPublicationMeli) throws ApiException;
+
     Object updatePropertiesWithSales(PropertiesWithSalesRequest request, String token, String idPublicationMeli) throws ApiException;
 
     Object updatePricePublication(ChangePriceRequest request, String token, String idPublicationMeli) throws ApiException;

@@ -30,11 +30,8 @@ public interface IMeliService {
 
     SellerAccount findAccountById(Integer accountId);
 
-    Map<String, Object> createPublication(Item publicationRequest, Integer account);
-
-    List<Map<String, Object>> createPublicationList(List<Item> items, Integer accountId ) throws Exception;
-
-    boolean createPublicationsFlow(List<ItemModel> items, Integer accountId, Short idMargin) throws NoSuchFieldException;
+    boolean createPublicationsFlow(List<ItemModel> items, Integer accountId, Short idMargin) throws NoSuchFieldException, TokenException,
+          ApiException;
 
     boolean createOrUpdateDetailPublicationsMeli(List<ItemModel> items, Integer accountId, Short idMargin);
 
