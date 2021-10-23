@@ -71,6 +71,7 @@ public class ApiService implements IApiService {
 
     private static final String ERROR = "error";
     private static final String MELI_ERROR = "error_meli";
+    private static final String RESPONSE = "response";
 
     @Override
     public MeliAutheticationResponse getTokenByCode(String code) throws ApiException {
@@ -110,7 +111,7 @@ public class ApiService implements IApiService {
                     sellerAccountToUpdate.setUserIdBss(meliAutheticationResponse.getUserId());
                     sellerAccountToUpdate.setStatus(MeliStatusAccount.AUTHORIZED.getCode());
                     sellerAccountToUpdate.setExpirationDate(DateTimeUtilsBss.plusCurrentTimeMilleSeconds(meliAutheticationResponse.getExpiresIn(), DateTimePlusType.SECOND));
-                    map.put("response", sellerAccountRepository.save(sellerAccountToUpdate));
+                    map.put(RESPONSE, sellerAccountRepository.save(sellerAccountToUpdate));
                 }
 
             }
@@ -148,7 +149,7 @@ public class ApiService implements IApiService {
                 sellerAccountToUpdate.setPoints(meliUserAccount.getPoints());
                 sellerAccountToUpdate.setMe2(isMe2(meliUserAccount.getShippingModes()));
                 sellerAccountToUpdate.setPermalink(meliUserAccount.getPermalink());
-                map.put("response", sellerAccountRepository.save(sellerAccountToUpdate));
+                map.put(RESPONSE, sellerAccountRepository.save(sellerAccountToUpdate));
             } catch (ApiException e) {
 
                 try {
@@ -282,7 +283,7 @@ public class ApiService implements IApiService {
         Map<String, Object> response = new HashMap<>();
         try {
             Object obj = restTemplate.getForEntity(String.format(ApiResources.ROOT + "/" + ApiResources.ITEMS + "/%s", idPublication), Object.class);
-            response.put("response", obj);
+            response.put(RESPONSE, obj);
             return response;
         } catch (Exception e) {
             response.put(MELI_ERROR, e.getCause());
