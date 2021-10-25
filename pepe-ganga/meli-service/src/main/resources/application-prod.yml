@@ -1,11 +1,4 @@
-server:
-  port: ${PORT:0}
-  error:
-    include-message: always
-    include-binding-errors: always
 spring:
-  application:
-    name: meli-service
   datasource:
     username: admin
     password: 123456789.*dhl
@@ -14,8 +7,6 @@ spring:
     hibernate:
       ddl-auto: none
 eureka:
-  instance:
-    instance-id: ${spring.application.name}:${eureka.instance.instance_id:${random.value}}
   client:
     service-url:
       defaultZone: http://eureka-server:8761/eureka
@@ -26,7 +17,6 @@ logging:
         SQL: error
   file:
     name: ./log/meli-service.log
-
 scheduler:
   cron:
     stock: 0 */5 * ? * *
