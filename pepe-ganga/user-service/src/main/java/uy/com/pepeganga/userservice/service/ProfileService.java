@@ -29,4 +29,14 @@ public class ProfileService implements IProfileService {
     public Profile findProfileByUserEmail(String email) {
         return profileRepository.findProfileByUserEmail(email);
     }
+
+    @Override
+    public List<Integer> getIdProfilesDisabled() {
+        return profileRepository.findIdProfileDisabled();
+    }
+
+    @Override
+    public List<Integer> getIdProfilesEnabled() {
+        return profileRepository.findIdProfileEnabled();
+    }
 }

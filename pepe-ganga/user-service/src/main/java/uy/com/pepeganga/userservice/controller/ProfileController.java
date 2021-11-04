@@ -27,6 +27,16 @@ public class ProfileController {
         return new ResponseEntity<>(profileService.getProfiles(), HttpStatus.OK);
     }
 
+    @GetMapping("/profiles/disabled")
+    public List<Integer> getDisabledProfiles() {
+        return profileService.getIdProfilesDisabled();
+    }
+
+    @GetMapping("/profiles/enabled")
+    public List<Integer> getEnabledProfiles() {
+        return profileService.getIdProfilesEnabled();
+    }
+
     @GetMapping("/profiles/by-user-email/{email}")
     public ResponseEntity<AuthAddInformationClaim> findProfileByUserEmail(@PathVariable String email) {
         Profile profileFounded = profileService.findProfileByUserEmail(email);

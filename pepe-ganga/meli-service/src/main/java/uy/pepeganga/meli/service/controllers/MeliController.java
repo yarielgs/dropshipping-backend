@@ -5,11 +5,14 @@ import meli.model.Item;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import uy.com.pepeganga.business.common.entities.Margin;
 import uy.com.pepeganga.business.common.entities.MeliCategoryME2;
 import uy.com.pepeganga.business.common.entities.SellerAccount;
 import uy.com.pepeganga.business.common.exceptions.PGException;
+import uy.com.pepeganga.business.common.models.PriceCostMLDto;
 import uy.pepeganga.meli.service.exceptions.NotFoundException;
 import uy.pepeganga.meli.service.exceptions.TokenException;
 import uy.pepeganga.meli.service.models.DetailsPublicationsMeliGrid;
@@ -83,6 +86,11 @@ public class MeliController {
         }
     }
 
+    @PostMapping("/update-pricesCost")
+    public void updatePriceCost(@RequestBody PriceCostMLDto priceCostMlDto){
+        meliService.updatePriceCostUYU(priceCostMlDto.getIdProfileList(), priceCostMlDto.getPriceCostDtos());
+    }
+
     @PostMapping("/changeStatusPublication/{accountId}/{publicationId}")
     public ResponseEntity<Map<String, Object>> changeStatusPublication(@PathVariable Integer accountId, @PathVariable String publicationId, @RequestParam int status){
         return new ResponseEntity<>(meliService.changeStatusPublication(accountId, status, publicationId), HttpStatus.OK);
@@ -129,8 +137,11 @@ public class MeliController {
     }
 
     @PostMapping("/update-stock")
+    @Async
+    @Transactional
     public void updateStock(@RequestBody List<Pair> pairs, @RequestParam Long idData){
         meliService.updateStock(pairs, idData);
+        return;
     }
 
     @GetMapping("/categories-me2")
@@ -152,6 +163,8 @@ public class MeliController {
     public ResponseEntity<Boolean> isFlexEnabled(@PathVariable Integer accountId) throws PGException, ApiException, TokenException {
         return new ResponseEntity<>(meliService.accountWithEnabledFlex(accountId), HttpStatus.OK);
     }
+
+
 
 
 }

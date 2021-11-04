@@ -9,10 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import uy.com.pepeganga.business.common.entities.*;
 import uy.com.pepeganga.business.common.exceptions.PGException;
+import uy.com.pepeganga.business.common.models.PriceCostDto;
 import uy.com.pepeganga.business.common.utils.date.DateTimeUtilsBss;
 import uy.com.pepeganga.business.common.utils.enums.*;
 import uy.com.pepeganga.business.common.utils.methods.BurbbleSort;
@@ -35,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Service
+@EnableAsync
 public class MeliService  implements IMeliService {
 
     private static final Logger logger = LoggerFactory.getLogger(MeliService.class);
@@ -46,6 +51,9 @@ public class MeliService  implements IMeliService {
 
     @Autowired
     DetailsPublicationMeliRepository detailsPublicationRepository;
+
+    @Autowired
+    MarginRepository marginRepo;
 
     @Autowired
     ImageDetailPublicationRepository imageDPRepository;
@@ -357,7 +365,6 @@ public class MeliService  implements IMeliService {
             }
         } catch (TokenException e) {
             logger.error(" Error getting token Meli Response: {}", e.getMessage());
-            //response.put(MELI_ERROR, new ApiMeliModelException(e.getCode(), "Error al obtener token de Mercado Libre. Pude que la API este presentando problema de conexión"));
             throw new ApiException(e.getCode(), "Error al obtener token de Mercado Libre. Pude que la API este presentando problema de conexión");
         } catch (ApiException e) {
             //comprobar los codigos de Token Vencido
@@ -471,7 +478,7 @@ public class MeliService  implements IMeliService {
             }
             return response;
         } catch (Exception e) {
-            logger.error("Error storing in Data Base:", e.getMessage());
+            logger.error("Error storing in Data Base: {}", e.getMessage());
             response.put(ActionResult.DATABASE_ERROR.getValue(), "Error storing in database");
             return response;
         }
@@ -670,7 +677,7 @@ public class MeliService  implements IMeliService {
                     try {
                         MeliResponseBodyException bodyException = mapper.readValue(e.getResponseBody(), MeliResponseBodyException.class);
                         if (Objects.isNull(bodyException.getCause()) || bodyException.getCause().length == 0) {
-                            logger.error(String.format("Error Meli: %s", bodyException.getMessage()));
+                            logger.error("Error Meli: {}", bodyException.getMessage());
                             response.put(MapResponseConstants.MELI_ERROR, bodyException.getMessage());
                         } else {
                             Object[] obj = bodyException.getCause();
@@ -700,6 +707,9 @@ public class MeliService  implements IMeliService {
         return response;
     }
 
+    ///
+    /// Actualiza los precios de la tabla Details y de ML para los cambios de Margenes.
+    ///
     @Override
     public void updatePricePublication(Margin margin, Integer idProfile) {
         List<SellerAccount> accountList;
@@ -709,7 +719,7 @@ public class MeliService  implements IMeliService {
         try {
             Optional<Profile> profileDb = profileRepository.findById(idProfile);
             if (!profileDb.isPresent()) {
-                logger.error(String.format("Error, the profile with id %s not found: {}: ", idProfile));
+                logger.error("Error, the profile with id {} not found: ", idProfile);
                 return;
             }
             accountList = profileDb.get().getSellerAccounts();
@@ -720,9 +730,9 @@ public class MeliService  implements IMeliService {
             for (DetailsPublicationsMeli detail : detailsPublicationList) {
                 Integer price;
                 if (margin.getType() == MarginType.PERCENT.getCode()) {
-                    price = Math.toIntExact(Math.round((detail.getPriceEditProduct() * (margin.getValue() / 100)) + detail.getPriceEditProduct()));
+                    price = Math.toIntExact(Math.round((detail.getPriceCostUYU() * (margin.getValue() / 100)) + detail.getPriceCostUYU()));
                 } else {
-                    price = Math.toIntExact(Math.round(detail.getPriceEditProduct() + margin.getValue()));
+                    price = Math.toIntExact(Math.round(detail.getPriceCostUYU() + margin.getValue()));
                 }
                 detail.setPendingMarginUpdate(true);
                 detail.setPricePublication(price);
@@ -761,6 +771,68 @@ public class MeliService  implements IMeliService {
         }
     }
 
+    ///
+    /// Actualiza todos los precios en tabla y ML si el valor costo se actualizó
+    ///
+    @Override
+    public void updatePriceCostUYU(List<Integer> idProfileList, List<PriceCostDto> priceCostDtos) {
+        List<SellerAccount> accountList;
+        List<Integer> accountIdList;
+        List<DetailsPublicationsMeli> detailsPublicationList;
+
+        for (int idProfile : idProfileList) {
+            try {
+                Optional<Profile> profileDb = profileRepository.findById(idProfile);
+                if (!profileDb.isPresent()) {
+                    logger.error("Error, the profile with id %s not found: {}: ", idProfile);
+                    continue;
+                }
+                detailsPublicationList = new ArrayList<>();
+                accountList = profileDb.get().getSellerAccounts();
+                accountIdList = accountList.stream().map(SellerAccount::getId).collect(Collectors.toList());
+
+                for (PriceCostDto priceCostDto: priceCostDtos) {
+                    var dPublicationList = detailsPublicationRepository.findByDistintPriceCostUyu(accountIdList, priceCostDto.getSku(), priceCostDto.getPriceCostUyu(), 0);
+
+                    if(dPublicationList != null && !dPublicationList.isEmpty()) {
+                        //Update price and pending to all publications in details table
+                        for (DetailsPublicationsMeli detail : dPublicationList) {
+                            int price = 0;
+                            Optional<Margin> margin = marginRepo.findById(detail.getMargin());
+
+                            if (margin.isPresent()) {
+                                if (margin.get().getType() == MarginType.PERCENT.getCode()) {
+                                    price = Math.toIntExact(Math.round((priceCostDto.getPriceCostUyu() * (margin.get().getValue() / 100)) + priceCostDto.getPriceCostUyu()));
+                                } else {
+                                    price = Math.toIntExact(Math.round(priceCostDto.getPriceCostUyu() + margin.get().getValue()));
+                                }
+                            } else {
+                                price = Math.toIntExact(Math.round(priceCostDto.getPriceCostUyu()));
+                            }
+
+                            detail.setPendingMarginUpdate(true);
+                            detail.setPricePublication(price);
+                            detail.setPriceCostUYU(priceCostDto.getPriceCostUyu());
+                            detail.setPriceCostUSD(priceCostDto.getPriceCostUsd());
+                        }
+
+                        detailsPublicationRepository.saveAll(dPublicationList);
+                        detailsPublicationList.addAll(dPublicationList);
+                    }
+                }
+
+                //Actualizo precios en ML y la columna PendingMarginUpdate en la table Details.
+                //Este metodo es Asíncrono
+                if(!detailsPublicationList.isEmpty())
+                    UpdatePriceOnML(detailsPublicationList, accountList);
+
+            } catch (Exception e) {
+                logger.error(" Error of the system: {}", e.getMessage());
+            }
+        }
+
+    }
+
     //Sincroniza las publicaciones del sistema con Mercado Libre. (Actualiza los estados y el precio si tuvo algún cambio)
     @Override
     public Map<String, Object> synchronizePublication(Integer idProfile, List<Integer> idDetailsPublicationsList) {
@@ -784,8 +856,8 @@ public class MeliService  implements IMeliService {
             }
             return response;
         } catch (Exception e) {
-            logger.error(String.format("Error of systems "), e.getMessage());
-            response.put(ActionResult.ERROR.getValue(), String.format("Error of systems: {}: ", e.getMessage()));
+            logger.error("Error of systems, Error: {} ", e.getMessage());
+            response.put(ActionResult.ERROR.getValue(), String.format("Error of systems: %s: ", e.getMessage()));
             return response;
         }
     }
@@ -926,7 +998,7 @@ public class MeliService  implements IMeliService {
             if (!publicationsList.isEmpty()) {
                 Optional<SellerAccount> accountFounded = getAccountMeli(accountId, false);
                 if (accountFounded.isEmpty()) {
-                    logger.error(String.format("Not Found, Account with id %s not found: ", accountId));
+                    logger.error("Not Found, Account with id {} not found: ", accountId);
                     throw new Exception(String.format("Account with id: %s not found", accountId));
                 } else if (MeliUtils.isExpiredToken(accountFounded.get())) {
                     accountFounded = Optional.ofNullable(apiService.getTokenByRefreshToken(accountFounded.get()));
@@ -941,15 +1013,15 @@ public class MeliService  implements IMeliService {
                                 Object obj1 = apiService.disableFlexInItem(item.getIdPublicationMeli(), accountFounded.get().getAccessToken());
                                 MeliResponseBodyException detailD = mapper.convertValue(obj, MeliResponseBodyException.class);
                                 if (detailD.getStatus() == FlexResponse.No_Content.getStatus()) {
-                                    logger.info(String.format("FLEX shipping disabled for publication: %s ", item.getIdPublicationMeli()));
+                                    logger.info("FLEX shipping disabled for publication: {} ", item.getIdPublicationMeli());
                                 } else {
-                                    logger.warn(String.format("The disable FLEX send operation produces the following message: %s, to the publicaction: %s",
-                                          detailD.getError(), item.getIdPublicationMeli()));
+                                    logger.warn("The disable FLEX send operation produces the following message: {}, to the publicaction: {}",
+                                          detailD.getError(), item.getIdPublicationMeli());
                                 }
                             }
                         } catch (ApiException e) {
-                            logger.warn(String.format("The disable FLEX send operation produces the following message: %s, to the publicaction: %s", e.getResponseBody(), item.getIdPublicationMeli()));
-                            logger.info(String.format("If error's code is 404 then the Item have not Flex or not exist."));
+                            logger.warn("The disable FLEX send operation produces the following message: {}, to the publicaction: {}", e.getResponseBody(), item.getIdPublicationMeli());
+                            logger.info("If error's code is 404 then the Item have not Flex or not exist.");
                         }
                     }
                 }
@@ -1084,8 +1156,8 @@ public class MeliService  implements IMeliService {
         Map<String, Object> response = new HashMap<>();
         Optional<Profile> profileDb = profileRepository.findById(idProfile);
         if (!profileDb.isPresent()) {
-            logger.error(String.format("Not Found, the profile with id %s not found: {}: ", idProfile));
-            return (Map<String, Object>) response.put("Error", String.format("Error, the profile with id %s not found: {}: ", idProfile));
+            logger.error("Not Found, the profile with id {} not found ", idProfile);
+            return (Map<String, Object>) response.put("Error", String.format("Error, the profile with id %s not found.", idProfile));
         }
         List<DetailsPublicationsMeli> listDetails = new ArrayList<>();
         List<SellerAccount> finalAccountList = profileDb.get().getSellerAccounts();
@@ -1105,10 +1177,10 @@ public class MeliService  implements IMeliService {
 
             } catch (ApiException e) {
                 logger.error(" Error de Mercado Libre: {}", e.getResponseBody());
-                return (Map<String, Object>) response.put("Error", String.format("Error de Mercado Libre: {}", e.getResponseBody()));
+                return (Map<String, Object>) response.put("Error", String.format("Error de Mercado Libre: %s", e.getResponseBody()));
             } catch (TokenException e) {
                 logger.error(" Error getting token Meli Response: {}", e.getMessage());
-                return (Map<String, Object>) response.put("Meli_Error", String.format("Error getting token Meli Response: {}", e.getMessage()));
+                return (Map<String, Object>) response.put("Meli_Error", String.format("Error getting token Meli Response: %s", e.getMessage()));
             }
 
         }
@@ -1117,6 +1189,39 @@ public class MeliService  implements IMeliService {
             detailsPublicationRepository.saveAll(listDetails);
         }
         return (Map<String, Object>) response.put(MapResponseConstants.RESPONSE, String.format("All publications were updated"));
+    }
+
+    @Async
+    public void UpdatePriceOnML(final List<DetailsPublicationsMeli> detailsPublicationList, final List<SellerAccount> accountList) {
+        List<DetailsPublicationsMeli> detailsPublicationUpdatedList = new ArrayList<>();
+
+        //Update all publications in ML if these are in 'active' status
+        for (DetailsPublicationsMeli detail : detailsPublicationList) {
+            if (detail.getStatus().equals(MeliStatusPublications.ACTIVE.getValue())) {
+                ChangePriceRequest changePrice = new ChangePriceRequest(detail.getPricePublication());
+
+                Optional<SellerAccount> accountFounded = accountList.stream().filter(a -> a.getId() == detail.getAccountMeli()).findFirst();
+                try {
+                    if (MeliUtils.isExpiredToken(accountFounded.get())) {
+                        accountFounded = Optional.ofNullable(apiService.getTokenByRefreshToken(accountFounded.get()));
+                    }
+
+                    Object obj = apiService.updatePricePublication(changePrice, accountFounded.get().getAccessToken(), detail.getIdPublicationMeli());
+                    //comprobar codigo de actualizado -- 200 OK
+                    detail.setPendingMarginUpdate(false);
+                    detailsPublicationUpdatedList.add(detail);
+                } catch (ApiException e) {
+                    logger.error(" Error de Mercado Libre: {}", e.getResponseBody());
+                } catch (TokenException e) {
+                    logger.error(" Error getting token Meli Response: {}", e.getMessage());
+                }
+            }
+        }
+
+        //Actualiza la columna PendingMarginUpdate a falso
+        for (DetailsPublicationsMeli dPublication : detailsPublicationUpdatedList) {
+            detailsPublicationRepository.updatePendingMarginUpdate(dPublication.getId(), dPublication.getPendingMarginUpdate());
+        }
     }
 
     private Map<String, Object> setProductToNopublishedStatus(Integer idProduct, Short status) {
@@ -1130,7 +1235,7 @@ public class MeliService  implements IMeliService {
                 return response;
             }
         } catch (Exception e) {
-            logger.error(ActionResult.DATABASE_ERROR.getValue(), e.getMessage());
+            logger.error(ActionResult.DATABASE_ERROR.getValue() + "Error: {}" , e.getMessage());
             response.put(ActionResult.DATABASE_ERROR.getValue(), e.getMessage());
         }
         return response;
@@ -1203,4 +1308,6 @@ public class MeliService  implements IMeliService {
         }
         return detailP;
     }
+
+
 }

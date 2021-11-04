@@ -1,6 +1,7 @@
 package uy.pepeganga.meli.service.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,10 @@ public interface DetailsPublicationMeliRepository extends JpaRepository<DetailsP
     @Query(value = "select dt.* from detailspublicationsmeli dt where account_meli in (:accountsId) and dt.deleted = :isDeleted and dt.margin = :idMargin ", nativeQuery = true)
     List<DetailsPublicationsMeli> findByIdAccountsAndMargin(List<Integer> accountsId, Short idMargin, Integer isDeleted);
 
+    @Transactional(readOnly = true)
+    @Query(value = "select dt.* from detailspublicationsmeli dt where dt.account_meli in (:accountsId) and dt.deleted = :isDeleted and dt.sku = :sku and dt.price_cost_uyu <> :priceCost ", nativeQuery = true)
+    List<DetailsPublicationsMeli> findByDistintPriceCostUyu(List<Integer> accountsId, String sku, double priceCost, Integer isDeleted);
+
     List<DetailsPublicationsMeli> findAllBySku(String sku);
 
     List<DetailsPublicationsMeli> findAllByAccountMeli(Integer account_meli);
@@ -38,4 +43,9 @@ public interface DetailsPublicationMeliRepository extends JpaRepository<DetailsP
 
     @Query("select d1.id from DetailsPublicationsMeli d1 where d1.accountMeli in( select s1.id from SellerAccount s1 where s1.profile.id = :profileId and s1.userIdBss > 0)  and d1.deleted <> 1")
     List<Integer> findIdsByMeliAccountsOfProfileId(Integer profileId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "update detailspublicationsmeli dt set dt.pending_margin_update= :value where dt.id = :id", nativeQuery = true)
+    void updatePendingMarginUpdate(Integer id, boolean value);
 }

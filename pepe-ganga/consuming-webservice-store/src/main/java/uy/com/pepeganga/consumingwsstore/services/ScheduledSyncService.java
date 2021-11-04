@@ -4,20 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import uy.com.pepeganga.business.common.entities.*;
+import uy.com.pepeganga.business.common.models.PriceCostDto;
 import uy.com.pepeganga.business.common.utils.date.DateTimeUtilsBss;
 import uy.com.pepeganga.business.common.utils.methods.ConfigurationsSystem;
-import uy.com.pepeganga.consumingwsstore.client.MeliFeignClient;
 import uy.com.pepeganga.consumingwsstore.models.Pair;
 import uy.com.pepeganga.consumingwsstore.models.RiskTime;
 import uy.com.pepeganga.consumingwsstore.repositories.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @EnableAsync
@@ -28,8 +26,6 @@ public class ScheduledSyncService implements IScheduledSyncService{
     private static final Logger logger = LoggerFactory.getLogger(ScheduledSyncService.class);
     ObjectMapper mapper = new ObjectMapper();
 
-    @Autowired
-    MeliFeignClient feign;
     @Autowired
     RiskTime property;
 
@@ -62,6 +58,8 @@ public class ScheduledSyncService implements IScheduledSyncService{
     FamilyRequestService familyService;
     @Autowired
     ItemRequestService itemService;
+    @Autowired
+    IUpdateProducts updateProductService;
 
     public ScheduledSyncService() {
         this.configService = new ConfigurationsSystem();
@@ -96,11 +94,9 @@ public class ScheduledSyncService implements IScheduledSyncService{
                 logger.error("Error updating stock to publications in Mercado Libre");
                 return;
             }
-            return;
         }catch (Exception e) {
-            logger.error(String.format("Error synchronizing Tables, General method, Error: {} "), e.getMessage());
+            logger.error("Error synchronizing Tables, General method, Error: {} ", e.getMessage());
             updateTableLogs(String.format("Error synchronizing Tables, General method, Error: %s", e.getMessage()), true);
-            return;
         }
 
     }
@@ -124,8 +120,53 @@ public class ScheduledSyncService implements IScheduledSyncService{
         }
     }
 
+    public void sendCheckingByStockRisk() {
+        try {
+            List<CheckingStockProcessor> checkList = new ArrayList<>();
+            List<StockProcessor> stockList = new ArrayList<>();
+            stockList.addAll(stockProcRepo.findAll());
+            Integer globalStockRisk = getStockRisk();
+
+            if (!stockList.isEmpty()) {
+                logger.info("Starting the synchronization of stock risk...");
+                AtomicInteger count = new AtomicInteger();
+                while (count.get() < stockList.size()) {
+                    CheckingStockProcessor checking = new CheckingStockProcessor();
+                    // Verifico si se pausa al actualizar la variable StockRisk
+                    if ((stockList.get(count.get()).getRealStock() - stockList.get(count.get()).getExpectedStock()) <= globalStockRisk) {
+                        checking.setSku(stockList.get(count.get()).getSku());
+                        checking.setExpectedStock(stockList.get(count.get()).getExpectedStock());
+                        checking.setRealStock(stockList.get(count.get()).getRealStock());
+                        checking.setAction(0);
+                        checkList.add(checking);
+                        logger.info("Enviando al checking con item con sku: {}", checking.getSku());
+                    }
+                    count.getAndIncrement();
+                }
+
+                logger.info("Updating checking Stock table");
+                //Actualizar la tabla checking en la base datos
+                if (!checkList.isEmpty()) {
+                    checkList.forEach(check -> {
+                        CheckingStockProcessor check_data = checkStockRepo.findBySku(check.getSku());
+                        if (check_data != null && check_data.getSku() != null && check_data.getSku() != "")
+                            check.setId(check_data.getId());
+                    });
+                    checkStockRepo.saveAll(checkList);
+                }
+                logger.info("Checking Stock table completed...");
+                logger.info("IMPORTANT: THE SYNCHRONIZATION OF STOCK RISK PROCESS WAS FINISHED CORRECTLY ....");
+                updateTableLogsOfRisk("synchronization success", false);
+            }
+        }catch (Exception e){
+            logger.error(String.format("Error sending products to checking by Stock Risk. Method: sendCheckingByStockRisk(), Msg: %s, Error: ", e.getMessage()), e);
+            logger.error("No se completó la sincronizacion al actualizar variable ´Riesgo de Stock´");
+            updateTableLogsOfRisk(String.format("Error sending products to checking by Stock Risk. Method: sendCheckingByStockRisk(), Msg: %s", e.getMessage()), true);
+        }
+    }
+
     private boolean insertData(String type) {
-        logger.info(String.format("Starting to insert or update %s data in table", type));
+        logger.info("Starting to insert or update {} data in table", type);
         try {
             if (type.equals("brand"))
                 if(!brandService.storeBrand(data))
@@ -139,12 +180,11 @@ public class ScheduledSyncService implements IScheduledSyncService{
             if (type.equals("item"))
                 if(!itemService.storeItems(data))
                     return false;
-            logger.info(String.format("Insert or Update %s data in table Completed....", type));
+            logger.info("Insert or Update {} data in table Completed....", type);
             return true;
         }catch (Exception e){
-            logger.error(String.format("Error inserting or updating %s tables, Msg: {}, Error: {}", type), e.getMessage(), e);
+            logger.error(String.format("Error inserting or updating %s tables, Msg: {}, Error: ", type), e.getMessage(), e);
             updateTableLogs(String.format("Error inserting or updating %s tables {}", type) + e.getMessage(), true);
-            //deleteTemporalData();
             return false;
         }
     }
@@ -179,9 +219,8 @@ public class ScheduledSyncService implements IScheduledSyncService{
         logger.info("Starting to update stock provider...");
         List<StockProcessor> stockList = new ArrayList<>();
         stockList.addAll(stockProcRepo.findAll());
-        List<Item> itemsU = new ArrayList<>();
-        itemsU = itemRepo.findAll();
-        List<String> itemsToUpdate = new ArrayList<>();
+        List<Item> itemsU = itemRepo.findAll();
+        //List<String> itemsToUpdate = new ArrayList<>();
         Integer globalStockRisk = getStockRisk();
 
         List<Pair> pairs = new ArrayList<>();
@@ -191,9 +230,10 @@ public class ScheduledSyncService implements IScheduledSyncService{
         List<CheckingStockProcessor> checkingList = new ArrayList<>();
         List<StockProcessor> stockToAddOrUpdate = new ArrayList<>();
 
+        List<PriceCostDto> priceCostDtos = new ArrayList<>();
+
         if(!stockList.isEmpty()){
             itemsU.forEach(newItem -> {
-                pairs.add(new Pair(newItem.getSku(), Math.toIntExact(newItem.getStockActual())));
                 boolean exit = false;
                 AtomicInteger count = new AtomicInteger();
                 CheckingStockProcessor checking = new CheckingStockProcessor();
@@ -205,10 +245,17 @@ public class ScheduledSyncService implements IScheduledSyncService{
                         exit = true;
                         //El producto llego en la actualizacion
                         if (newItem.isUpdated() != null && newItem.isUpdated()) {
+
+                            pairs.add(new Pair(newItem.getSku(), Math.toIntExact(newItem.getStockActual())));
+
+                            //Actualizo stock del artículo
                             stockUpdated.setId(stockList.get(count.get()).getId());
                             stockUpdated.setSku(stockList.get(count.get()).getSku());
                             stockUpdated.setExpectedStock(stockList.get(count.get()).getExpectedStock());
                             stockUpdated.setRealStock(Math.toIntExact(newItem.getStockActual()));
+
+                            //Actualizo Lista de sku para comprobar si se actualizó el precio costo del articulo
+                            priceCostDtos.add(new PriceCostDto(newItem.getSku(), newItem.getPrecioPesos(), newItem.getPrecioDolares()));
 
                             //Si el articulo ya se encuentra pausado por stock lo envio de vuelta al checking, sino Verifico si se pausa al actualizar
                             if (((stockList.get(count.get()).getRealStock() - stockList.get(count.get()).getExpectedStock()) <= globalStockRisk) || ((int) newItem.getStockActual() - stockList.get(count.get()).getExpectedStock() <= globalStockRisk)) {
@@ -232,7 +279,7 @@ public class ScheduledSyncService implements IScheduledSyncService{
                             checkingList.add(check);
 
                             //Actualizamos el stock del Producto a cero en la tabla Item
-                            itemsToUpdate.add(newItem.getSku());
+                           // itemsToUpdate.add(newItem.getSku());
                             pairs.add(new Pair(newItem.getSku(), 0));
 
                             //actualizamos a cero el item en la tabla Stock Processor
@@ -240,7 +287,7 @@ public class ScheduledSyncService implements IScheduledSyncService{
                             stockUpdated.setSku(stockList.get(count.get()).getSku());
                             stockUpdated.setRealStock(0);
                             stockUpdated.setExpectedStock(0);
-                            stockToAddOrUpdate.add(stockUpdated);
+
                             logger.info("Enviando al checking para pausar especial el item con sku: {} por no venir en la actualización", stockUpdated.getSku());
                         }
                     }
@@ -249,6 +296,7 @@ public class ScheduledSyncService implements IScheduledSyncService{
                 if(!exit) {
                     //No existe el articulo con SKU en la tabla StockProcessor -- lo adiciono a StockProcessor Table
                     logger.info("Adicionando nuevo sku a la tabla Stock Processor: {}", newItem.getSku());
+                    pairs.add(new Pair(newItem.getSku(), Math.toIntExact(newItem.getStockActual())));
                     stockUpdated.setSku(newItem.getSku());
                     stockUpdated.setExpectedStock(0);
                     stockUpdated.setRealStock((int) newItem.getStockActual());
@@ -316,102 +364,47 @@ public class ScheduledSyncService implements IScheduledSyncService{
         logger.info("Updating fields 'Updated' to all items in Item table...");
         itemRepo.updateFieldUpdatedToAll(false);
 
+        ///
+        ///Esto está comentado pq fue modificado por un trigger (update_stockToZero_itemtable) sobre la tabla "stockprocessor" que actualiza la tabla Item a cero
+        /// cuando el Stock Real de la tabla stockprocessor es cero
+        ///
         //Actualizar stock en la Tabla Item para productos que no llegaron
-        List<Item> updateItem = new ArrayList<>();
-        itemsToUpdate.forEach(i -> {
-            Optional<Item> itemOptional = itemRepo.findById(i);
-            if(itemOptional.isPresent()) {
-                itemOptional.get().setStockActual(0);
-                updateItem.add(itemOptional.get());
-            }
-        });
-        if(!updateItem.isEmpty())
-            itemRepo.saveAll(updateItem);
-        logger.info("IMPORTANT: THE SYNCHRONIZATION PROCESS WAS FINISHED CORRECTLY ....");
+       /* logger.info("Updating stock in Item table ...");
+        if(!itemsToUpdate.isEmpty())
+            updateProductService.updateStockOfItems(itemsToUpdate, 0);*/
 
+        logger.info("IMPORTANT: THE SYNCHRONIZATION PROCESS WAS FINISHED CORRECTLY ....");
         logger.info("STARTING TO UPDATE PUBLICATIONS IN MERCADO LIBRE AND PRODUCTS STOCK IN TABLES OF THE SYSTEM");
 
-        //Actualiza stock en el sistema y en Mercado Libre
+        //Actualiza stock en Product table (mlPublications) y en Mercado Libre
         if(!initialStockEmpty) {
-            if(!updateStockOfProductsMeli(pairs)){
-               finishedWithError = true;
-            }
-            //Lamada al metodo asincrono
-            updateStockOfPublicationsMeli(pairs);
+            ///
+            ///Esto está comentado pq fue modificado por un trigger (update_stock_myproducts_table) sobre la tabla "stockprocessor"
+            /// que actualiza la tabla "mercadolibrepublications" al stock real
+            ///
 
+            /*logger.info("Updating stock in Product (mlPublications table) ...");
+            if(!updateProductService.updatestockofproducts(pairs)){
+                finishedWithError = true;
+            }*/
+
+            //Lamada al (Método Asíncrono)
+            logger.info("Updating stock on Meli...");
+            updateProductService.updateStockOfPublicationsMeli(pairs, data);
         }
+
+        //Actualiza Prices Costo en el sistema y en Mercado Libre (Método Asíncrono)
+        logger.info("Updating cost price in Product (mlPublications table), DetailsPublication table and Meli ...");
+        updateProductService.updatePrices(priceCostDtos);
 
         if(finishedWithError){ return false;}
         return true;
     }
 
-    public void sendCheckingByStockRisk() {
-        try {
-            List<CheckingStockProcessor> checkList = new ArrayList<>();
-            List<StockProcessor> stockList = new ArrayList<>();
-            stockList.addAll(stockProcRepo.findAll());
-            Integer globalStockRisk = getStockRisk();
-
-            if (!stockList.isEmpty()) {
-                logger.info("Starting the synchronization of stock risk...");
-                AtomicInteger count = new AtomicInteger();
-                while (count.get() < stockList.size()) {
-                    CheckingStockProcessor checking = new CheckingStockProcessor();
-                    // Verifico si se pausa al actualizar la variable StockRisk
-                    if ((stockList.get(count.get()).getRealStock() - stockList.get(count.get()).getExpectedStock()) <= globalStockRisk) {
-                        checking.setSku(stockList.get(count.get()).getSku());
-                        checking.setExpectedStock(stockList.get(count.get()).getExpectedStock());
-                        checking.setRealStock(stockList.get(count.get()).getRealStock());
-                        checking.setAction(0);
-                        checkList.add(checking);
-                        logger.info("Enviando al checking con item con sku: {}", checking.getSku());
-                    }
-                    count.getAndIncrement();
-                }
-
-                logger.info("Updating checking Stock table");
-                //Actualizar la tabla checking en la base datos
-                if (!checkList.isEmpty()) {
-                    checkList.forEach(check -> {
-                        CheckingStockProcessor check_data = checkStockRepo.findBySku(check.getSku());
-                        if (check_data != null && check_data.getSku() != null && check_data.getSku() != "")
-                            check.setId(check_data.getId());
-                    });
-                    checkStockRepo.saveAll(checkList);
-                }
-                logger.info("Checking Stock table completed...");
-                logger.info("IMPORTANT: THE SYNCHRONIZATION OF STOCK RISK PROCESS WAS FINISHED CORRECTLY ....");
-                updateTableLogsOfRisk("synchronization success", false);
-            }
-        }catch (Exception e){
-            logger.error(String.format("Error sending products to checking by Stock Risk. Method: sendCheckingByStockRisk(), Msg: %s, Error: ", e.getMessage()), e);
-            logger.error("No se completó la sincronizacion al actualizar variable ´Riesgo de Stock´");
-            updateTableLogsOfRisk(String.format("Error sending products to checking by Stock Risk. Method: sendCheckingByStockRisk(), Msg: %s", e.getMessage()), true);
-        }
-    }
-
-    private boolean updateStockOfProductsMeli(List<Pair> pairsI){
-        try {
-            pairsI.forEach( i -> {
-                productRepo.updateStockBySKU(i.getStock(), i.getSku());
-            });
-            return true;
-        }catch (Exception e){
-            logger.error(String.format("Error updating stock in mercadolibrepublications table {} Error: "), e.getMessage());
-            updateTableLogs(String.format("Error updating stock in mercadolibrepublications table {} Error: ", e.getMessage()), true);
-            return false;
-        }
-
-    }
-
-    @Async
-    public void updateStockOfPublicationsMeli(List<Pair> pairs){
-        try {
-            Long id = data.getId();
-            feign.updateStock(pairs, id);
-        }catch (Exception e) {
-            logger.warn(String.format("Timeout error waiting for response from meli service to update stock of publications {} Error: "), e.getMessage());
-        }
+    public void test(){
+        List<PriceCostDto> priceCostDtos = new ArrayList<>();
+        priceCostDtos.add(new PriceCostDto("G1949", 2350, 50));
+        updateProductService.updatePrices(priceCostDtos);
     }
 
     private Integer getStockRisk() {

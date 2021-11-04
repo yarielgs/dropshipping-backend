@@ -37,7 +37,7 @@ public class MercadoLibrePublications implements Serializable {
 	@JoinColumn(name="profile_id", nullable = false)
 	private Profile profile;
 	
-	@Column(name="productName", columnDefinition = "TEXT")
+	@Column(name="product_name", columnDefinition = "TEXT")
 	private String productName;	
 	
 	@Column(name="description", columnDefinition = "TEXT")
@@ -56,25 +56,26 @@ public class MercadoLibrePublications implements Serializable {
 	@JoinColumn(name = "meli_id")
 	private List<Image> images;
 
-	@Column(name="currentStock")
+	@Column(name="current_stock")
 	private long currentStock;
 
-	@Column(name="familyId")
+	@Column(name="family_id")
 	private Short familyId;
 
-	@Column(name="familyDesc")
+	@Column(name="family_desc")
 	private String familyDesc;
 
-	@Column(name="priceCostUYU")
+	@Column(name="price_costuyu")
 	private double priceCostUYU;
 
-	@Column(name="priceCostUSD")
+	@Column(name="price_costusd")
 	private double priceCostUSD;
 
 	@Column(name="deleted")
 	private Integer deleted = 0;
 
 	// 0 - Not paused, 1 - Paused
+	@Column(name="special_paused")
 	private Integer specialPaused = 0;
 	
 	public Integer getId() {

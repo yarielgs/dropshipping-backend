@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.*;
 import uy.com.pepeganga.business.common.models.OrderDto;
+import uy.com.pepeganga.business.common.models.PriceCostMLDto;
 import uy.com.pepeganga.consumingwsstore.models.Pair;
 
 import java.util.List;
@@ -21,4 +22,7 @@ public interface MeliFeignClient {
 
     @GetMapping("/api/orders/by-id/{id}")
     OrderDto getRecentOrdersById(@PathVariable Long id);
+
+    @PostMapping("/api/accounts/update-pricesCost")
+    void updatePriceCost( @RequestBody PriceCostMLDto priceCostMlDto);
 }

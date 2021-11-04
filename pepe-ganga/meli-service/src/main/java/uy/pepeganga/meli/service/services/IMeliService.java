@@ -4,6 +4,7 @@ import meli.ApiException;
 import meli.model.Item;
 import uy.com.pepeganga.business.common.entities.*;
 import uy.com.pepeganga.business.common.exceptions.PGException;
+import uy.com.pepeganga.business.common.models.PriceCostDto;
 import uy.pepeganga.meli.service.exceptions.NotFoundException;
 import uy.pepeganga.meli.service.exceptions.TokenException;
 import uy.pepeganga.meli.service.models.DetailsPublicationsMeliGrid;
@@ -78,5 +79,7 @@ public interface IMeliService {
     Boolean deleteCategoryME2(MeliCategoryME2 category) throws NotFoundException;
 
     Boolean accountWithEnabledFlex(Integer accountId) throws PGException, TokenException, ApiException;
+
+    void updatePriceCostUYU(List<Integer> idProfileList, List<PriceCostDto> priceCostDtos);
 
 }
