@@ -13,6 +13,7 @@ import uy.com.pepeganga.business.common.entities.MeliCategoryME2;
 import uy.com.pepeganga.business.common.entities.SellerAccount;
 import uy.com.pepeganga.business.common.exceptions.PGException;
 import uy.com.pepeganga.business.common.models.PriceCostMLDto;
+import uy.com.pepeganga.business.common.utils.enums.ChangeStatusPublicationType;
 import uy.pepeganga.meli.service.exceptions.NotFoundException;
 import uy.pepeganga.meli.service.exceptions.TokenException;
 import uy.pepeganga.meli.service.models.DetailsPublicationsMeliGrid;
@@ -93,12 +94,12 @@ public class MeliController {
 
     @PostMapping("/changeStatusPublication/{accountId}/{publicationId}")
     public ResponseEntity<Map<String, Object>> changeStatusPublication(@PathVariable Integer accountId, @PathVariable String publicationId, @RequestParam int status){
-        return new ResponseEntity<>(meliService.changeStatusPublication(accountId, status, publicationId), HttpStatus.OK);
+        return new ResponseEntity<>(meliService.changeStatusPublication(accountId, ChangeStatusPublicationType.ofCode(status).getStatus(), publicationId), HttpStatus.OK);
      }
 
     @PostMapping("/changeStatusMultiplePublications")
     public ResponseEntity<Map<String, Object>> changeStatusMultiplePublications(@RequestBody List<ChangeMultipleStatusRequest> multiples, @RequestParam int status){
-        return new ResponseEntity<>(meliService.changeStatusMultiplePublications(multiples, status), HttpStatus.OK);
+        return new ResponseEntity<>(meliService.changeStatusMultiplePublications(multiples, ChangeStatusPublicationType.ofCode(status).getStatus()), HttpStatus.OK);
     }
 
     @PutMapping("/delete-publication/{accountId}/{publicationId}")

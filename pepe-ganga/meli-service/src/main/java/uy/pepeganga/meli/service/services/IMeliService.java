@@ -1,7 +1,6 @@
 package uy.pepeganga.meli.service.services;
 
 import meli.ApiException;
-import meli.model.Item;
 import uy.com.pepeganga.business.common.entities.*;
 import uy.com.pepeganga.business.common.exceptions.PGException;
 import uy.com.pepeganga.business.common.models.PriceCostDto;
@@ -44,9 +43,9 @@ public interface IMeliService {
 
     Map<String, Object> updateDescription(DescriptionRequest product, String token, String idPublicationMeli);
 
-    Map<String, Object> changeStatusPublication(Integer accountId, int status, String idPublication);
+    Map<String, Object> changeStatusPublication(Integer accountId, String status, String idPublication);
 
-    Map<String, Object> changeStatusMultiplePublications(List<ChangeMultipleStatusRequest> multiple, int status);
+    Map<String, Object> changeStatusMultiplePublications(List<ChangeMultipleStatusRequest> multiple, String status);
 
     Map<String, Object> deletePublication(Integer accountId, String status, String idPublication);
 

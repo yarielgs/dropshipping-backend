@@ -379,22 +379,24 @@ public class MeliService  implements IMeliService {
 
     @Override
     public Map<String, Object> deletePublication(Integer accountId, String statusPublication, String idPublication) {
-        boolean delete = false;
         Map<String, Object> response = new HashMap<>();
         DeletePublicationRequest request = new DeletePublicationRequest();
+
+        DetailsPublicationsMeli details = detailsPublicationRepository.findByIdPublicationMeli(idPublication);
+
         try {
-            DetailsPublicationsMeli details = detailsPublicationRepository.findByIdPublicationMeli(idPublication);
+
             if (Objects.isNull(details)) {
                 logger.error("Detail Publication with id: {} not found", idPublication);
                 response.put(MapResponseConstants.ERROR,
                       new ApiMeliModelException(HttpStatus.NOT_FOUND.value(), String.format("Account with id: %s not found", accountId)));
                 return response;
             }
-            if (!statusPublication.equals(ChangeStatusPublicationType.CLOSED.getStatus())) {
-                var result = changeStatusPublication(accountId, 5, idPublication);
+            if (!statusPublication.equals(MeliStatusPublications.CLOSED.getValue())) {
+                var result = changeStatusPublication(accountId, MeliStatusPublications.CLOSED.getValue(), idPublication);
                 if (!result.containsKey("response")) {
                     if (result.containsKey(MapResponseConstants.MELI_ERROR) && (MeliErrorCodeReference.STATUS_NOT_MODIFIABLE.getCode().trim().equals(result.get(MapResponseConstants.MELI_ERROR)))) {
-                        response.putAll(deletePublicationFailed(details.getId()));
+                        response.putAll(deletePublicationOfSystem(details));
                         //OJO -- Ver como eliminar la referencia del nuevo producto en mercado libre
                     } else {
                         //Hubo un error que ya fue registrado en el metodo que se llamó
@@ -428,8 +430,8 @@ public class MeliService  implements IMeliService {
                     response.putAll(map);
                 }
             } else {
-                logger.error("Publication cannot be deleted by Mercado Libre, publicationId: {}", idPublication);
-                response.put(MapResponseConstants.MELI_ERROR, ChangeStatusPublicationType.ofCode(-1).getStatus());
+                logger.error("Publication '{}' cannot be deleted by Mercado Libre, deleting of system...", idPublication);
+                response.putAll(deletePublicationOfSystem(details));
             }
             return response;
         } catch (IllegalArgumentException e) {
@@ -443,14 +445,15 @@ public class MeliService  implements IMeliService {
             return response;
         } catch (ApiException e) {
             if (e.getCode() == 409) {
-                logger.error(String.format("You must wait a few seconds for the change to update to, publicationId: %s, code: {}, responseBody: {}",
-                      idPublication), e.getCode(), e.getResponseBody());
-                response.put(MapResponseConstants.MELI_ERROR, new ApiMeliModelException(e.getCode(),
-                      String.format("You must wait a few seconds for the change to update to, publicationId: %s", idPublication)));
+                logger.warn(String.format("You must wait a few seconds for the change to update to, publicationId: %s, code: {}",
+                      idPublication), e.getCode());
+                response.put(MapResponseConstants.RESPONSE, "deleted" );
             } else {
-                logger.error(String.format("Publication cannot be deleted, publicationId: %s, code: {}, responseBody: {}", idPublication), e.getCode(), e.getResponseBody());
+                logger.error("Publication '{}' cannot be deleted by Mercado Libre, deleting of system...", idPublication);
+                response.putAll(deletePublicationOfSystem(details));
+                /*logger.error(String.format("Publication cannot be deleted, publicationId: %s, code: {}, responseBody: {}", idPublication), e.getCode(), e.getResponseBody());
                 response.put(MapResponseConstants.MELI_ERROR,
-                      new ApiMeliModelException(e.getCode(), String.format("Publication cannot be deleted, publicationId: %s", idPublication)));
+                      new ApiMeliModelException(e.getCode(), String.format("Publication cannot be deleted, publicationId: %s", idPublication)));*/
             }
             return response;
         }
@@ -462,20 +465,33 @@ public class MeliService  implements IMeliService {
         try {
             Optional<DetailsPublicationsMeli> details = detailsPublicationRepository.findById(id);
             if (details.isPresent()) {
-                Map<String, Object> map = setProductToNopublishedStatus(details.get().getIdMLPublication(), States.NOPUBLISHED.getId());
-                details.get().setDeleted(1);
-                details.get().setIdMLPublication(-1);
-                detailsPublicationRepository.save(details.get());
-
-                if (map.containsKey("response")) {
-                    response.put("response", "deleted");
-                } else {
-                    response.putAll(map);
-                }
+                response = deletePublicationOfSystem(details.get());
             } else {
                 logger.error("Publication not found");
                 response.put(ActionResult.NOT_FOUND.getValue(), "Publication not found");
             }
+            return response;
+        } catch (Exception e) {
+            logger.error("Error storing in Data Base: {}", e.getMessage());
+            response.put(ActionResult.DATABASE_ERROR.getValue(), "Error storing in database");
+            return response;
+        }
+    }
+
+    private Map<String, Object> deletePublicationOfSystem(DetailsPublicationsMeli details) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Map<String, Object> map = setProductToNopublishedStatus(details.getIdMLPublication(), States.NOPUBLISHED.getId());
+            details.setDeleted(1);
+            details.setIdMLPublication(-1);
+            detailsPublicationRepository.save(details);
+
+            if (map.containsKey("response")) {
+                response.put("response", "deleted");
+            } else {
+                response.putAll(map);
+            }
+
             return response;
         } catch (Exception e) {
             logger.error("Error storing in Data Base: {}", e.getMessage());
@@ -502,14 +518,14 @@ public class MeliService  implements IMeliService {
 
             detailsList.forEach(d -> {
                 if (d.getStatus().equals(MeliStatusPublications.FAIL.getValue())) {
-                    if (!deletePublicationFailed(d.getId()).containsKey("response")) {
+                    if (!deletePublicationOfSystem(d).containsKey("response")) {
                         entry.set(true);
-                        response.put(ActionResult.PARTIAL.getValue(), "Algunas publicaciones no fueron eliminadas. Consulte con el administrador.");
+                        response.put(ActionResult.PARTIAL.getValue(), "Algunas publicaciones no fueron eliminadas. Revise el estado de estas.");
                     }
                 } else {
                     if (!deletePublication(d.getAccountMeli(), d.getStatus(), d.getIdPublicationMeli()).containsKey("response")) {
                         entry.set(true);
-                        response.put(ActionResult.PARTIAL.getValue(), "Algunas publicaciones no fueron eliminadas. Consulte con el administrador.");
+                        response.put(ActionResult.PARTIAL.getValue(), "Algunas publicaciones no fueron eliminadas. Revise el estado de estas.");
                     }
                 }
             });
@@ -631,17 +647,17 @@ public class MeliService  implements IMeliService {
     }
 
     @Override
-    public Map<String, Object> changeStatusPublication(Integer accountId, int status, String idPublication) {
+    public Map<String, Object> changeStatusPublication(Integer accountId, String status, String idPublication) {
 
         Map<String, Object> response = new HashMap<>();
         ChangeStatusPublicationRequest request = new ChangeStatusPublicationRequest();
 
         try {
-            request.setStatus(ChangeStatusPublicationType.ofCode(status).getStatus());
+            request.setStatus(status.trim());
         } catch (IllegalArgumentException e) {
-            logger.error("The status: {} you provide is not correct", status);
+            logger.error("The status: {} that you provide is not correct", status);
             response.put(MapResponseConstants.ERROR,
-                  new ApiMeliModelException(HttpStatus.BAD_REQUEST.value(), String.format("The status: %d you provide is not correct", status)));
+                  new ApiMeliModelException(HttpStatus.BAD_REQUEST.value(), String.format("The status: %s you provide is not correct", status)));
             return response;
         }
 
@@ -663,7 +679,7 @@ public class MeliService  implements IMeliService {
                     }
                     Object result = apiService.changeStatusPublications(request, accountFounded.get().getAccessToken(), idPublication);
                     if (!Objects.isNull(result)) {
-                        details.setStatus(ChangeStatusPublicationType.ofCode(status).getStatus());
+                        details.setStatus(status.trim());
                         response.put(MapResponseConstants.RESPONSE, detailsPublicationRepository.save(details).getStatus().trim());
                     } else {
                         logger.error("Publication not changed: status to change: {}, publicationId: {}", status, idPublication);
@@ -695,7 +711,7 @@ public class MeliService  implements IMeliService {
         return response;
     }
 
-    public Map<String, Object> changeStatusMultiplePublications(List<ChangeMultipleStatusRequest> multiple, int status) {
+    public Map<String, Object> changeStatusMultiplePublications(List<ChangeMultipleStatusRequest> multiple, String status) {
         Map<String, Object> response = new HashMap<>();
 
         for (ChangeMultipleStatusRequest one : multiple) {

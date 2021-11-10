@@ -29,6 +29,13 @@ public enum MeliStatusPublications {
                 .orElseThrow(IllegalArgumentException::new);
     }
 
+    public static MeliStatusPublications of(int id) {
+        return Stream.of(MeliStatusPublications.values())
+                     .filter(p -> p.getId() == id)
+                     .findFirst()
+                     .orElseThrow(IllegalArgumentException::new);
+    }
+
     public String getValue() {
         return value;
     }

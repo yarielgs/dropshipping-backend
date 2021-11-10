@@ -10,7 +10,6 @@ import uy.com.pepeganga.business.common.entities.CheckingStockProcessor;
 import uy.com.pepeganga.business.common.entities.DetailsPublicationsMeli;
 import uy.com.pepeganga.business.common.entities.MercadoLibrePublications;
 import uy.com.pepeganga.business.common.entities.StockProcessor;
-import uy.com.pepeganga.business.common.utils.enums.ChangeStatusPublicationType;
 import uy.com.pepeganga.business.common.utils.enums.MeliStatusPublications;
 import uy.com.pepeganga.business.common.utils.enums.States;
 import uy.com.pepeganga.business.common.utils.methods.ConfigurationsSystem;
@@ -133,9 +132,9 @@ public class StockProcessorService implements IStockProcessorService {
                         if (checkingStockProcessor.getAction() == 0) {
 
                             // Comprobamos si está activa la publicacion, si lo está mandamos a pausar
-                            if (detailsPublicationsMeli.getStatus().equals(ChangeStatusPublicationType.ACTIVE.getStatus())) {
+                            if (detailsPublicationsMeli.getStatus().equals(MeliStatusPublications.ACTIVE.getValue())) {
                                 Map<String, Object> response = meliService.changeStatusPublication(detailsPublicationsMeli.getAccountMeli(),
-                                        ChangeStatusPublicationType.PAUSED.getCode(), detailsPublicationsMeli.getIdPublicationMeli());
+                                      MeliStatusPublications.PAUSED.getValue(), detailsPublicationsMeli.getIdPublicationMeli());
                                 if (response.containsKey(MapResponseConstants.RESPONSE)) {
                                     logger.info("Publication was paused successfully. Publication Id: {}", detailsPublicationsMeli.getIdMLPublication());
                                     detailsPublicationsMeli.setStatus((String) response.get(MapResponseConstants.RESPONSE));
@@ -152,9 +151,9 @@ public class StockProcessorService implements IStockProcessorService {
                                 detailsPublicationsMeli.setDeleted(1);
                                 // aqui se le pasa el estado actual de la publicacion
                                 if(!detailsPublicationsMeli.getStatus().equals(MeliStatusPublications.FAIL.getValue()) &&
-                                        !detailsPublicationsMeli.getStatus().equals(ChangeStatusPublicationType.CLOSED.getStatus())){
+                                        !detailsPublicationsMeli.getStatus().equals(MeliStatusPublications.CLOSED.getValue())){
                                     Map<String, Object> response = meliService.changeStatusPublication(detailsPublicationsMeli.getAccountMeli(),
-                                            ChangeStatusPublicationType.CLOSED.getCode(), detailsPublicationsMeli.getIdPublicationMeli());
+                                          MeliStatusPublications.CLOSED.getValue(), detailsPublicationsMeli.getIdPublicationMeli());
                                     if (response.containsKey(MapResponseConstants.RESPONSE)) {
                                         logger.info("Publication was finished successfully. Publication Id: {}", detailsPublicationsMeli.getIdMLPublication());
                                         detailsPublicationsMeli.setStatus((String) response.get(MapResponseConstants.RESPONSE));
@@ -209,10 +208,10 @@ public class StockProcessorService implements IStockProcessorService {
                             detailsPublications) {
 
                         // Comprobamos si está activa la publicacion, si lo está mandamos a pausar
-                        if (detailsPublicationsMeli.getStatus().equals(ChangeStatusPublicationType.PAUSED.getStatus())) {
+                        if (detailsPublicationsMeli.getStatus().equals(MeliStatusPublications.PAUSED.getValue())) {
                             try {
                                 Map<String, Object> response = meliService.changeStatusPublication(detailsPublicationsMeli.getAccountMeli(),
-                                        ChangeStatusPublicationType.ACTIVE.getCode(), detailsPublicationsMeli.getIdPublicationMeli());
+                                      MeliStatusPublications.ACTIVE.getValue(), detailsPublicationsMeli.getIdPublicationMeli());
                                 if (response.containsKey(MapResponseConstants.RESPONSE)) {
                                     logger.info("Publication was reactivated successfully. Publication Id: {}", detailsPublicationsMeli.getIdMLPublication());
                                     // Si se logro activar entonces se elimina el bloqueo especial y estaria disponible en el frontend
