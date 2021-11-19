@@ -35,12 +35,13 @@ public class MeliUtils {
     public static boolean isExpiredToken(SellerAccount sellerAccount){
 
       try {
-          long currentTime = DateTimeUtilsBss.getLongDateTimeAtCurrentTime();
+          return true;
+          /*long currentTime = DateTimeUtilsBss.getLongDateTimeAtCurrentTime();
           if(sellerAccount.getDateLastSynchronization() > currentTime || sellerAccount.getDateLastSynchronization() < currentTime){
               return true;
           } else {
               return DateTimeUtilsBss.getDurationOfMilleSeconds(DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis(), sellerAccount.getExpirationDate()).getStandardMinutes() <= TOKEN_EXPIRATION;
-          }
+          }*/
       } catch (Exception e){
           logger.error(e.getMessage());
           return true;

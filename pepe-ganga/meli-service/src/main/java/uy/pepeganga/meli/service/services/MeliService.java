@@ -9,10 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import uy.com.pepeganga.business.common.entities.*;
 import uy.com.pepeganga.business.common.exceptions.PGException;
@@ -39,7 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Service
-@EnableAsync
 public class MeliService  implements IMeliService {
 
     private static final Logger logger = LoggerFactory.getLogger(MeliService.class);
@@ -1207,7 +1203,6 @@ public class MeliService  implements IMeliService {
         return (Map<String, Object>) response.put(MapResponseConstants.RESPONSE, String.format("All publications were updated"));
     }
 
-    @Async
     public void UpdatePriceOnML(final List<DetailsPublicationsMeli> detailsPublicationList, final List<SellerAccount> accountList) {
         List<DetailsPublicationsMeli> detailsPublicationUpdatedList = new ArrayList<>();
 
