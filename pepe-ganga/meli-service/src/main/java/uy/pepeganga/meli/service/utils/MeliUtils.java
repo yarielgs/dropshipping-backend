@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import uy.com.pepeganga.business.common.entities.SellerAccount;
+import uy.com.pepeganga.business.common.utils.date.DateTimePlusType;
 import uy.com.pepeganga.business.common.utils.date.DateTimeUtilsBss;
 
 @Component
@@ -35,16 +36,36 @@ public class MeliUtils {
     public static boolean isExpiredToken(SellerAccount sellerAccount){
 
       try {
+          return true;
+          /*
           long currentTime = DateTimeUtilsBss.getLongDateTimeAtCurrentTime();
           if(sellerAccount.getDateLastSynchronization() > currentTime || sellerAccount.getDateLastSynchronization() < currentTime){
               return true;
           } else {
               return DateTimeUtilsBss.getDurationOfMilleSeconds(DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis(), sellerAccount.getExpirationDate()).getStandardMinutes() <= TOKEN_EXPIRATION;
-          }
+          }*/
       } catch (Exception e){
           logger.error(e.getMessage());
           return true;
       }
+
+
+    }
+
+    public static boolean isExpiredTokenV2(SellerAccount sellerAccount){
+
+        try {
+            long currentTime = DateTimeUtilsBss.getLongDateTimeAtCurrentTime();
+            long value = 0;
+            if(sellerAccount.getDateLastSynchronization() != currentTime) {
+                return true;
+            } else {
+                return (DateTimeUtilsBss.plusCurrentTimeMilleSeconds(value, DateTimePlusType.SECOND) - 1800) >= sellerAccount.getExpirationDate();
+            }
+        } catch (Exception e){
+            logger.error(e.getMessage());
+            return true;
+        }
 
 
     }

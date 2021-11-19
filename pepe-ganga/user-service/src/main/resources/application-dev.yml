@@ -6,7 +6,7 @@ spring:
     password: mwzyljfwdpcfttcb
     properties.mail.smtp.auth: true
     properties.mail.smtp.starttls.enable: true
-    test-connection: true
+    test-connection: false
 
   datasource:
     username: admin

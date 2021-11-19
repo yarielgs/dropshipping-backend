@@ -23,13 +23,13 @@ public class DateTimeUtilsBss {
         long result;
             switch (plusType) {
                 case HOUR:
-                    result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis() + plus * 24 *  60  * 1000 ;
+                    result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis() + (plus * 24 *  60  * 1000) ;
                     break;
                 case MINUTE:
-                    result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis() +   plus * 60  * 1000;
+                    result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis() +   (plus * 60  * 1000);
                     break;
                 case SECOND:
-                    result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis() +  plus * 1000;
+                    result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis() +  (plus * 1000);
                     break;
                 default:
                     result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis();
@@ -65,6 +65,28 @@ public class DateTimeUtilsBss {
         XMLGregorianCalendar xc = DatatypeFactory.newInstance().newXMLGregorianCalendar(gc);
         return xc;
     }
+/*
+    //----- NUevos metodos ---//
+    public static java.time.LocalDateTime getCurrentTime() {
+        var p = java.time.LocalDateTime.now();
+        return p;
+    }
 
+    public static long getCurrentTimeMillis() {
+        var p = System.currentTimeMillis();
+        return p;
+    }
+
+    public static long convertMillis(java.time.LocalDateTime ltime) {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
+        String jodatime = dtf.format(ltime);
+        try {
+            Date d = f.parse(string_date);
+            long milliseconds = d.getTime();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
+*/
 }
 

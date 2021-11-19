@@ -1207,7 +1207,6 @@ public class MeliService  implements IMeliService {
         return (Map<String, Object>) response.put(MapResponseConstants.RESPONSE, String.format("All publications were updated"));
     }
 
-    @Async
     public void UpdatePriceOnML(final List<DetailsPublicationsMeli> detailsPublicationList, final List<SellerAccount> accountList) {
         List<DetailsPublicationsMeli> detailsPublicationUpdatedList = new ArrayList<>();
 
