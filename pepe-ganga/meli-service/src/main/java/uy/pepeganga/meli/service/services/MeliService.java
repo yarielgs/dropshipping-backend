@@ -755,7 +755,7 @@ public class MeliService  implements IMeliService {
             //Update all publications in ML if these are in 'active' status
             List<SellerAccount> finalAccountList = accountList;
             for (DetailsPublicationsMeli detail : detailsPublicationList) {
-                if (detail.getStatus().equals(MeliStatusPublications.ACTIVE.getValue())) {
+                if (detail.getStatus().equals(MeliStatusPublications.ACTIVE.getValue()) && detail.getSpecialPaused() == 0) {
                     ChangePriceRequest changePrice = new ChangePriceRequest(detail.getPricePublication());
                     Optional<SellerAccount> accountFounded = finalAccountList.stream().filter(a -> a.getId() == detail.getAccountMeli()).findFirst();
                     try {
@@ -790,7 +790,6 @@ public class MeliService  implements IMeliService {
     public void updatePriceCostUYU(List<Integer> idProfileList, List<PriceCostDto> priceCostDtos) {
         List<SellerAccount> accountList;
         List<Integer> accountIdList;
-        List<DetailsPublicationsMeli> detailsPublicationList;
 
         for (int idProfile : idProfileList) {
             try {
@@ -799,7 +798,6 @@ public class MeliService  implements IMeliService {
                     logger.error("Error, the profile with id %s not found: {}: ", idProfile);
                     continue;
                 }
-                detailsPublicationList = new ArrayList<>();
                 accountList = profileDb.get().getSellerAccounts();
                 accountIdList = accountList.stream().map(SellerAccount::getId).collect(Collectors.toList());
 
@@ -829,20 +827,64 @@ public class MeliService  implements IMeliService {
                         }
 
                         detailsPublicationRepository.saveAll(dPublicationList);
-                        detailsPublicationList.addAll(dPublicationList);
                     }
                 }
-
-                //Actualizo precios en ML y la columna PendingMarginUpdate en la table Details.
-                //Este metodo es Asíncrono
-                if(!detailsPublicationList.isEmpty())
-                    UpdatePriceOnML(detailsPublicationList, accountList);
 
             } catch (Exception e) {
                 logger.error(" Error of the system: {}", e.getMessage());
             }
         }
 
+    }
+
+    ///
+    /// Actualiza todos los precios pendientes por actualizar en Meli.
+    ///
+    @Override
+    public void UpdateProductsPending() {
+        int isDeletedOrSPaused = 0;
+        String status = "active";
+
+        try {
+
+            Collection<SellerAccount> accounts = new ArrayList<>();
+            Collection<DetailsPublicationsMeli> pendingPublications = detailsPublicationRepository.findPendingUpdatePublications(isDeletedOrSPaused,
+                  status, isDeletedOrSPaused);
+
+            for (DetailsPublicationsMeli pending : pendingPublications) {
+                try {
+                    var local_acc = accounts.stream().filter(a -> a.getId().equals(pending.getAccountMeli())).findFirst();
+                    if (local_acc.isPresent()) {
+                        PropertiesWithSalesRequest changePrice = new PropertiesWithSalesRequest();
+                        changePrice.setPrice(pending.getPricePublication());
+                        updatePropertiesWithSales(changePrice, local_acc.get().getAccessToken(), pending.getIdPublicationMeli());
+
+                        detailsPublicationRepository.updatePendingMarginUpdate(pending.getId(), false);
+                    } else {
+                        var repo_acc = sellerAccountRepository.findById(pending.getAccountMeli());
+                        if (repo_acc.isPresent()) {
+                            if (MeliUtils.isExpiredToken(repo_acc.get())) {
+                                repo_acc = Optional.ofNullable(apiService.getTokenByRefreshToken(repo_acc.get()));
+                            }
+                            accounts.add(repo_acc.get());
+
+                            PropertiesWithSalesRequest changePrice = new PropertiesWithSalesRequest();
+                            changePrice.setPrice(pending.getPricePublication());
+                            updatePropertiesWithSales(changePrice, repo_acc.get().getAccessToken(), pending.getIdPublicationMeli());
+
+                            detailsPublicationRepository.updatePendingMarginUpdate(pending.getId(), false);
+
+                        }
+                    }
+                } catch (ApiException e) {
+                    logger.error(" Error de Mercado Libre: ", e);
+                } catch (TokenException e) {
+                    logger.error(" Error getting token Meli Response: {}", e.getMessage());
+                }
+            }
+        }catch (Exception e) {
+            logger.error(" Error updating price in Meli: ", e);
+        }
     }
 
     //Sincroniza las publicaciones del sistema con Mercado Libre. (Actualiza los estados y el precio si tuvo algún cambio)
@@ -858,7 +900,7 @@ public class MeliService  implements IMeliService {
                 //Actualiza las publicaciones con cambios pendientes
                 List<DetailsPublicationsMeli> toUpdateList = detailsList
                       .stream()
-                      .filter(d -> d.getStatus().equals(MeliStatusPublications.ACTIVE.getValue()) && d.getPendingMarginUpdate())
+                      .filter(d -> d.getStatus().equals(MeliStatusPublications.ACTIVE.getValue()) && d.getSpecialPaused() == 0 && d.getPendingMarginUpdate())
                       .collect(Collectors.toList());
                 if (!toUpdateList.isEmpty()) {
                     response.putAll(updatePriceMeliOfActivePublications(idProfile, toUpdateList));
@@ -1201,38 +1243,6 @@ public class MeliService  implements IMeliService {
             detailsPublicationRepository.saveAll(listDetails);
         }
         return (Map<String, Object>) response.put(MapResponseConstants.RESPONSE, String.format("All publications were updated"));
-    }
-
-    public void UpdatePriceOnML(final List<DetailsPublicationsMeli> detailsPublicationList, final List<SellerAccount> accountList) {
-        List<DetailsPublicationsMeli> detailsPublicationUpdatedList = new ArrayList<>();
-
-        //Update all publications in ML if these are in 'active' status
-        for (DetailsPublicationsMeli detail : detailsPublicationList) {
-            if (detail.getStatus().equals(MeliStatusPublications.ACTIVE.getValue())) {
-                ChangePriceRequest changePrice = new ChangePriceRequest(detail.getPricePublication());
-
-                Optional<SellerAccount> accountFounded = accountList.stream().filter(a -> a.getId() == detail.getAccountMeli()).findFirst();
-                try {
-                    if (MeliUtils.isExpiredToken(accountFounded.get())) {
-                        accountFounded = Optional.ofNullable(apiService.getTokenByRefreshToken(accountFounded.get()));
-                    }
-
-                    Object obj = apiService.updatePricePublication(changePrice, accountFounded.get().getAccessToken(), detail.getIdPublicationMeli());
-                    //comprobar codigo de actualizado -- 200 OK
-                    detail.setPendingMarginUpdate(false);
-                    detailsPublicationUpdatedList.add(detail);
-                } catch (ApiException e) {
-                    logger.error(" Error de Mercado Libre: {}", e.getResponseBody());
-                } catch (TokenException e) {
-                    logger.error(" Error getting token Meli Response: {}", e.getMessage());
-                }
-            }
-        }
-
-        //Actualiza la columna PendingMarginUpdate a falso
-        for (DetailsPublicationsMeli dPublication : detailsPublicationUpdatedList) {
-            detailsPublicationRepository.updatePendingMarginUpdate(dPublication.getId(), dPublication.getPendingMarginUpdate());
-        }
     }
 
     private Map<String, Object> setProductToNopublishedStatus(Integer idProduct, Short status) {

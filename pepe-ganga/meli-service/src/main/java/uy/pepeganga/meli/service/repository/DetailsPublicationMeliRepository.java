@@ -27,6 +27,10 @@ public interface DetailsPublicationMeliRepository extends JpaRepository<DetailsP
     @Query(value = "select dt.* from detailspublicationsmeli dt where dt.account_meli in (:accountsId) and dt.deleted = :isDeleted and dt.sku = :sku and dt.price_cost_uyu <> :priceCost ", nativeQuery = true)
     List<DetailsPublicationsMeli> findByDistintPriceCostUyu(List<Integer> accountsId, String sku, double priceCost, Integer isDeleted);
 
+    @Transactional(readOnly = true)
+    @Query(value = "select dt.* from detailspublicationsmeli dt where dt.deleted = :isDeleted and dt.status = :status and dt.special_paused = :specialPaused and dt.pending_margin_update = true ", nativeQuery = true)
+    List<DetailsPublicationsMeli> findPendingUpdatePublications(Integer isDeleted, String status, Integer specialPaused);
+
     List<DetailsPublicationsMeli> findAllBySku(String sku);
 
     List<DetailsPublicationsMeli> findAllByAccountMeli(Integer account_meli);

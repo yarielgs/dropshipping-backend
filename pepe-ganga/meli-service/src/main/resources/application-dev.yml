@@ -21,6 +21,7 @@ scheduler:
   cron:
     stock: 0 */5 * ? * *
     notification: 0/30 * * ? * *
+    update-price: 0 */6 * ? * *
 
 
 # Business properties
@@ -33,9 +34,12 @@ meli:
     client: 5381382874135569
     secret: ach1Wz5swsZTrQVJ9UTdKcAkg1Rsc0UA
     redirect: https://localhost:4200/home/meli-accounts
+    #client: 3756313271086728
+    #secret: QjgI9XjbZEd7petHtAVnwFhKpLvnyK6l
+    #redirect: https://pepeganga-dropshipping.web.app/home/meli-accounts
     expiration:
       token: 30
   order:
-    attempts: 1
+    attempts: 3
   hostname:
     free: http://localhost:9999

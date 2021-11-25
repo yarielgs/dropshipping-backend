@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import uy.pepeganga.meli.service.services.IMeliService;
 import uy.pepeganga.meli.service.services.IOrderService;
 import uy.pepeganga.meli.service.services.IStockProcessorService;
 
@@ -19,6 +21,9 @@ public class ScheduledTasks {
 
      @Autowired
      private IStockProcessorService stockProcessorService;
+
+   @Autowired
+   private IMeliService meliService;
 
 
     @Scheduled(cron = "${scheduler.cron.notification}")
@@ -36,6 +41,14 @@ public class ScheduledTasks {
         stockProcessorService.schedulingStockProcessor();
         logger.info("Finishing Stock processor scheduler....");
     }
+
+   @Scheduled(cron = "${scheduler.cron.update-price}")
+   @Async
+   public void schedulingUpdatePending() {
+      logger.info("Processing publication pending scheduler....");
+      meliService.UpdateProductsPending();
+      logger.info("Finishing publication pending scheduler....");
+   }
 
 
 }

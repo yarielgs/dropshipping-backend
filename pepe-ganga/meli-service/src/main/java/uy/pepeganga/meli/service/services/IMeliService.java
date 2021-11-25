@@ -81,4 +81,6 @@ public interface IMeliService {
 
     void updatePriceCostUYU(List<Integer> idProfileList, List<PriceCostDto> priceCostDtos);
 
+    void UpdateProductsPending();
+
 }
