@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import meli.ApiException;
 import meli.model.*;
 import meli.model.Item;
+
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import uy.pepeganga.meli.service.config.MeliConfig;
 import uy.pepeganga.meli.service.exceptions.NotFoundException;
 import uy.pepeganga.meli.service.exceptions.TokenException;
 import uy.pepeganga.meli.service.models.*;
+import uy.pepeganga.meli.service.models.Categories.ShippingPreferences;
 import uy.pepeganga.meli.service.models.dto.MeliSellerAccountFlexDto;
 import uy.pepeganga.meli.service.models.meli_account_configuration.MeliAccountConfiguration;
 import uy.pepeganga.meli.service.models.meli_account_configuration.QueryRequest;
@@ -857,9 +859,10 @@ public class MeliService  implements IMeliService {
                     if (local_acc.isPresent()) {
                         PropertiesWithSalesRequest changePrice = new PropertiesWithSalesRequest();
                         changePrice.setPrice(pending.getPricePublication());
-                        updatePropertiesWithSales(changePrice, local_acc.get().getAccessToken(), pending.getIdPublicationMeli());
+                        if (updatePropertiesWithSales(changePrice, local_acc.get().getAccessToken(), pending.getIdPublicationMeli()).containsKey("response")) {
+                            detailsPublicationRepository.updatePendingMarginUpdate(pending.getId(), false);
+                        }
 
-                        detailsPublicationRepository.updatePendingMarginUpdate(pending.getId(), false);
                     } else {
                         var repo_acc = sellerAccountRepository.findById(pending.getAccountMeli());
                         if (repo_acc.isPresent()) {
@@ -870,9 +873,10 @@ public class MeliService  implements IMeliService {
 
                             PropertiesWithSalesRequest changePrice = new PropertiesWithSalesRequest();
                             changePrice.setPrice(pending.getPricePublication());
-                            updatePropertiesWithSales(changePrice, repo_acc.get().getAccessToken(), pending.getIdPublicationMeli());
 
-                            detailsPublicationRepository.updatePendingMarginUpdate(pending.getId(), false);
+                            if(updatePropertiesWithSales(changePrice, repo_acc.get().getAccessToken(), pending.getIdPublicationMeli()).containsKey("response")) {
+                                detailsPublicationRepository.updatePendingMarginUpdate(pending.getId(), false);
+                            }
 
                         }
                     }
@@ -1191,6 +1195,17 @@ public class MeliService  implements IMeliService {
             }
         } else {
             return false;
+        }
+    }
+
+    @Override
+    public Set<String> getShippingModeOfCategories(String idCategory) {
+        try {
+            var obj = apiService.getShippingModeOfCategories(idCategory);
+            var shipping = mapper.convertValue(obj, ShippingPreferences.class);
+            return shipping.getLogistics().stream().map(m -> m.getMode()).collect(Collectors.toSet());
+        } catch (ApiException e) {
+            return Set.of();
         }
     }
 

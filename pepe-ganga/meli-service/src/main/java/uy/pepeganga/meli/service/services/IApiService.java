@@ -55,4 +55,6 @@ public interface IApiService {
 
     Object showConfigurationSeller(QueryRequest request, String token) throws ApiException;
 
+    Object getShippingModeOfCategories(String idCategory) throws ApiException;
+
 }

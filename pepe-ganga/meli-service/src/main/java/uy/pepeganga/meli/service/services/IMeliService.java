@@ -17,6 +17,7 @@ import uy.pepeganga.meli.service.models.publications.PropertiesWithoutSalesReque
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface IMeliService {
 
@@ -82,5 +83,7 @@ public interface IMeliService {
     void updatePriceCostUYU(List<Integer> idProfileList, List<PriceCostDto> priceCostDtos);
 
     void UpdateProductsPending();
+
+    Set<String> getShippingModeOfCategories(String idCategory);
 
 }

@@ -267,6 +267,11 @@ public class ApiService implements IApiService {
         return restClientApiUy.resourceGet(String.format(ApiResources.SITES + "/MLU/shipping/selfservice/items" + "/%s", idPublicationMeli), token);
     }
 
+    @Override
+    public Object getShippingModeOfCategories(String idCategory) throws ApiException {
+        return restClientApiUy.resourceGet(String.format("categories/%s/shipping_preferences", idCategory), "");
+    }
+
     public Object disableFlexInItem(String idPublicationMeli, String token) throws ApiException {
         return restClientApiUy.resourceDelete(String.format(ApiResources.SITES + "/MLU/shipping/selfservice/items" + "/%s", idPublicationMeli), token);
     }

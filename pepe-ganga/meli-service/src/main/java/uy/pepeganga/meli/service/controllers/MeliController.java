@@ -1,7 +1,6 @@
 package uy.pepeganga.meli.service.controllers;
 
 import meli.ApiException;
-import meli.model.Item;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +24,7 @@ import uy.pepeganga.meli.service.services.IMeliService;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/accounts")
@@ -165,7 +165,10 @@ public class MeliController {
         return new ResponseEntity<>(meliService.accountWithEnabledFlex(accountId), HttpStatus.OK);
     }
 
-
+    @GetMapping("/shipping-mode/{idCategory}")
+    public Set<String> getShippingModeOfCategories(@PathVariable String idCategory) {
+        return meliService.getShippingModeOfCategories(idCategory);
+    }
 
 
 }
