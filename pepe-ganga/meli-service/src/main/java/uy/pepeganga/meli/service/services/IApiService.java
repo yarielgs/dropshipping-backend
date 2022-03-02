@@ -10,6 +10,7 @@ import uy.pepeganga.meli.service.models.meli_account_configuration.QueryRequest;
 import uy.pepeganga.meli.service.models.publications.*;
 
 import java.util.Map;
+import java.util.Set;
 
 public interface IApiService {
 
@@ -56,5 +57,7 @@ public interface IApiService {
     Object showConfigurationSeller(QueryRequest request, String token) throws ApiException;
 
     Object getShippingModeOfCategories(String idCategory) throws ApiException;
+
+    Set<String> getUserShippingPreferences(SellerAccount sellerAccount);
 
 }

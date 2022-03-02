@@ -31,6 +31,7 @@ import uy.pepeganga.meli.service.repository.SellerAccountRepository;
 import uy.pepeganga.meli.service.utils.ApiResources;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ApiService implements IApiService {
@@ -147,7 +148,7 @@ public class ApiService implements IApiService {
                 sellerAccountToUpdate.setSiteId(meliUserAccount.getSiteId());
                 sellerAccountToUpdate.setUserType(meliUserAccount.getUserType());
                 sellerAccountToUpdate.setPoints(meliUserAccount.getPoints());
-                sellerAccountToUpdate.setMe2(isMe2(meliUserAccount.getShippingModes()));
+                sellerAccountToUpdate.setMe2(isMe2(getUserShippingPreferences(accountFounded.get()).stream().collect(Collectors.toList())));
                 sellerAccountToUpdate.setPermalink(meliUserAccount.getPermalink());
                 map.put(RESPONSE, sellerAccountRepository.save(sellerAccountToUpdate));
             } catch (ApiException e) {
@@ -164,6 +165,26 @@ public class ApiService implements IApiService {
         }
 
         return map;
+    }
+
+    @Override
+    public Set<String> getUserShippingPreferences(SellerAccount sellerAccount) {
+
+        Map<String, Object> map = new HashMap<>();
+        try {
+            String resource = String.format("/users/%d/shipping_preferences", sellerAccount.getUserId());
+            Map<String, Object> mapShippng = mapper.convertValue(restClientApiUy.resourceGet(resource, sellerAccount.getAccessToken().trim()), Map.class);
+           return mapper.convertValue(mapShippng.get("modes"), Set.class);
+        } catch (ApiException e) {
+            try {
+                logger.error(" Error getting shipping_preferences to User: {}", e.getResponseBody());
+                map.put(MELI_ERROR, new ApiMeliModelException(e.getCode(), e.getResponseBody(), mapper.readValue(e.getResponseBody(), MeliResponseBodyException.class)));
+            } catch (JsonProcessingException ex) {
+                logger.error(" Error parsing Meli Response", ex);
+                map.put(ERROR, new ApiMeliModelException(HttpStatus.PARTIAL_CONTENT.value(), ex.getMessage()));
+            }
+            return Set.of();
+        }
     }
 
 
