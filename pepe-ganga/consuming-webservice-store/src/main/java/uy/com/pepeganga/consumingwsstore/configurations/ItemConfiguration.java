@@ -21,7 +21,7 @@ public class ItemConfiguration {
 	  @Bean	
 	  public ItemRequestService itemClient() {
 		  ItemRequestService client = new ItemRequestService();
-		  client.setDefaultUri("http://201.217.140.35/WSPPGGFE");
+		  client.setDefaultUri("http://201.217.140.35/WSPPGGFEv2");
 	    client.setMarshaller(this.marshaller());
 	    client.setUnmarshaller(this.marshaller());
 	    return client;

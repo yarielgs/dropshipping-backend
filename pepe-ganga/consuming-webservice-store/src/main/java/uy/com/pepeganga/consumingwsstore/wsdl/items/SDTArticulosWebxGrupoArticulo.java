@@ -2,7 +2,7 @@
 // Este archivo ha sido generado por la arquitectura JavaTM para la implantación de la referencia de enlace (JAXB) XML v2.3.0 
 // Visite <a href="https://javaee.github.io/jaxb-v2/">https://javaee.github.io/jaxb-v2/</a> 
 // Todas las modificaciones realizadas en este archivo se perderán si se vuelve a compilar el esquema de origen. 
-// Generado el: 2021.05.18 a las 10:12:03 PM UYT 
+// Generado el: 2022.03.16 a las 08:19:12 PM UYT 
 //
 
 
@@ -12,7 +12,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
-
 
 /**
  * <p>Clase Java para SDTArticulosWebxGrupo.Articulo complex type.
@@ -61,6 +60,10 @@ import javax.xml.bind.annotation.XmlType;
  *         &lt;element name="ArtCodBar" type="{http://www.w3.org/2001/XMLSchema}string"/&gt;
  *         &lt;element name="ArtCodDun" type="{http://www.w3.org/2001/XMLSchema}string"/&gt;
  *         &lt;element name="ArtCajaSeparada" type="{http://www.w3.org/2001/XMLSchema}string"/&gt;
+ *         &lt;element name="PrecioPesosSinOferta" type="{http://www.w3.org/2001/XMLSchema}double"/&gt;
+ *         &lt;element name="PrecioDolaresSinOferta" type="{http://www.w3.org/2001/XMLSchema}double"/&gt;
+ *         &lt;element name="PrecioPesosDropC" type="{http://www.w3.org/2001/XMLSchema}double"/&gt;
+ *         &lt;element name="PrecioPesosBS" type="{http://www.w3.org/2001/XMLSchema}double"/&gt;
  *       &lt;/sequence&gt;
  *     &lt;/restriction&gt;
  *   &lt;/complexContent&gt;
@@ -107,7 +110,11 @@ import javax.xml.bind.annotation.XmlType;
     "peso",
     "artCodBar",
     "artCodDun",
-    "artCajaSeparada"
+    "artCajaSeparada",
+    "precioPesosSinOferta",
+    "precioDolaresSinOferta",
+    "precioPesosDropC",
+    "precioPesosBS"
 })
 public class SDTArticulosWebxGrupoArticulo {
 
@@ -185,6 +192,14 @@ public class SDTArticulosWebxGrupoArticulo {
     protected String artCodDun;
     @XmlElement(name = "ArtCajaSeparada", required = true)
     protected String artCajaSeparada;
+    @XmlElement(name = "PrecioPesosSinOferta")
+    protected double precioPesosSinOferta;
+    @XmlElement(name = "PrecioDolaresSinOferta")
+    protected double precioDolaresSinOferta;
+    @XmlElement(name = "PrecioPesosDropC")
+    protected double precioPesosDropC;
+    @XmlElement(name = "PrecioPesosBS")
+    protected double precioPesosBS;
 
     /**
      * Obtiene el valor de la propiedad artId.
@@ -984,6 +999,70 @@ public class SDTArticulosWebxGrupoArticulo {
      */
     public void setArtCajaSeparada(String value) {
         this.artCajaSeparada = value;
+    }
+
+    /**
+     * Obtiene el valor de la propiedad precioPesosSinOferta.
+     * 
+     */
+    public double getPrecioPesosSinOferta() {
+        return precioPesosSinOferta;
+    }
+
+    /**
+     * Define el valor de la propiedad precioPesosSinOferta.
+     * 
+     */
+    public void setPrecioPesosSinOferta(double value) {
+        this.precioPesosSinOferta = value;
+    }
+
+    /**
+     * Obtiene el valor de la propiedad precioDolaresSinOferta.
+     * 
+     */
+    public double getPrecioDolaresSinOferta() {
+        return precioDolaresSinOferta;
+    }
+
+    /**
+     * Define el valor de la propiedad precioDolaresSinOferta.
+     * 
+     */
+    public void setPrecioDolaresSinOferta(double value) {
+        this.precioDolaresSinOferta = value;
+    }
+
+    /**
+     * Obtiene el valor de la propiedad precioPesosDropC.
+     * 
+     */
+    public double getPrecioPesosDropC() {
+        return precioPesosDropC;
+    }
+
+    /**
+     * Define el valor de la propiedad precioPesosDropC.
+     * 
+     */
+    public void setPrecioPesosDropC(double value) {
+        this.precioPesosDropC = value;
+    }
+
+    /**
+     * Obtiene el valor de la propiedad precioPesosBS.
+     * 
+     */
+    public double getPrecioPesosBS() {
+        return precioPesosBS;
+    }
+
+    /**
+     * Define el valor de la propiedad precioPesosBS.
+     * 
+     */
+    public void setPrecioPesosBS(double value) {
+        this.precioPesosBS = value;
     }
 
 }

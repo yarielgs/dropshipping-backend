@@ -15,17 +15,13 @@ import uy.com.pepeganga.consumingwsstore.wsdl.items.CargaArticulosPPyKExecute;
 import uy.com.pepeganga.consumingwsstore.wsdl.items.CargaArticulosPPyKExecuteResponse;
 import uy.com.pepeganga.consumingwsstore.wsdl.items.SDTArticulosWebxGrupo;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class ItemRequestService extends WebServiceGatewaySupport{
 	
-	
-	
 	private static final Logger logger = LoggerFactory.getLogger(ItemRequestService.class);
-
 	
 	@Autowired
 	ConsumingWebserviceStoreApplication p;
@@ -60,7 +56,7 @@ public class ItemRequestService extends WebServiceGatewaySupport{
 				 request.setSdtarticuloswebxgrupo(stdItems);
 
 				 CargaArticulosPPyKExecuteResponse response = (CargaArticulosPPyKExecuteResponse) getWebServiceTemplate()
-						 .marshalSendAndReceive("http://201.217.140.35/WSPPGGFE/aCargaArticulosPPyK.aspx", request);
+						 .marshalSendAndReceive("http://201.217.140.35/WSPPGGFEv2/aCargaArticulosPPyK.aspx", request);
 
 				 logger.info("Obteniendo grupos de 100 items del almacen");
 				 List<Item> partialList = ConvertModels.convetToItemEntityList(response.getSdtarticuloswebxgrupo().getArticulos().getArticulo());

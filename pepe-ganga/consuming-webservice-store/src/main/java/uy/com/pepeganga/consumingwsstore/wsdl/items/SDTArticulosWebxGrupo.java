@@ -2,7 +2,7 @@
 // Este archivo ha sido generado por la arquitectura JavaTM para la implantación de la referencia de enlace (JAXB) XML v2.3.0 
 // Visite <a href="https://javaee.github.io/jaxb-v2/">https://javaee.github.io/jaxb-v2/</a> 
 // Todas las modificaciones realizadas en este archivo se perderán si se vuelve a compilar el esquema de origen. 
-// Generado el: 2021.05.18 a las 10:12:03 PM UYT 
+// Generado el: 2022.03.16 a las 08:19:12 PM UYT 
 //
 
 
@@ -12,7 +12,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
-
 
 /**
  * <p>Clase Java para SDTArticulosWebxGrupo complex type.
@@ -28,7 +27,7 @@ import javax.xml.bind.annotation.XmlType;
  *         &lt;element name="Empresa" type="{http://www.w3.org/2001/XMLSchema}string"/&gt;
  *         &lt;element name="Parte" type="{http://www.w3.org/2001/XMLSchema}short"/&gt;
  *         &lt;element name="Cantidad" type="{http://www.w3.org/2001/XMLSchema}int"/&gt;
- *         &lt;element name="Articulos" type="{PpGg}cons3SDTArticulosWebxGrupo.Articulos"/&gt;
+ *         &lt;element name="Articulos" type="{PpGg}cons4SDTArticulosWebxGrupo.Articulos"/&gt;
  *       &lt;/sequence&gt;
  *     &lt;/restriction&gt;
  *   &lt;/complexContent&gt;
@@ -56,7 +55,7 @@ public class SDTArticulosWebxGrupo {
     @XmlElement(name = "Cantidad")
     protected int cantidad;
     @XmlElement(name = "Articulos", required = true)
-    protected Cons3SDTArticulosWebxGrupoArticulos articulos;
+    protected Cons4SDTArticulosWebxGrupoArticulos articulos;
 
     /**
      * Obtiene el valor de la propiedad consumidor.
@@ -143,10 +142,10 @@ public class SDTArticulosWebxGrupo {
      * 
      * @return
      *     possible object is
-     *     {@link Cons3SDTArticulosWebxGrupoArticulos }
+     *     {@link Cons4SDTArticulosWebxGrupoArticulos }
      *     
      */
-    public Cons3SDTArticulosWebxGrupoArticulos getArticulos() {
+    public Cons4SDTArticulosWebxGrupoArticulos getArticulos() {
         return articulos;
     }
 
@@ -155,10 +154,10 @@ public class SDTArticulosWebxGrupo {
      * 
      * @param value
      *     allowed object is
-     *     {@link Cons3SDTArticulosWebxGrupoArticulos }
+     *     {@link Cons4SDTArticulosWebxGrupoArticulos }
      *     
      */
-    public void setArticulos(Cons3SDTArticulosWebxGrupoArticulos value) {
+    public void setArticulos(Cons4SDTArticulosWebxGrupoArticulos value) {
         this.articulos = value;
     }
 
