@@ -31,8 +31,8 @@ meli:
     url: https://api.mercadolibre.com
     invoice:
       url: https://api.mercadolibre.com/shipment_labels?shipment_ids=XXX&response_type=pdf&access_token=
-    client: 3756313271086728
-    secret: QjgI9XjbZEd7petHtAVnwFhKpLvnyK6l
+    client: 648079461510645
+    secret: HJz5XXP4YuOzKYP8YpXTtYDszoYn4W1q
     redirect: https://drop-beeseller.web.app/home/meli-accounts
     expiration:
       token: 30
