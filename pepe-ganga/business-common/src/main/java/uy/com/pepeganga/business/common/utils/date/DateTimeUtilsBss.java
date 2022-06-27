@@ -5,9 +5,11 @@ import org.joda.time.*;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
-import java.util.GregorianCalendar;
-import java.util.TimeZone;
 
+import java.time.ZoneId;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 
 public class DateTimeUtilsBss {
 
@@ -15,8 +17,39 @@ public class DateTimeUtilsBss {
         // Do nothing
     }
 
+    // Suma o resta las horas recibidos a la fecha
+    public static long calculateDateTime(int horas) {
+        Calendar calendar = Calendar.getInstance();
+
+        calendar.getTimeZone(); // Obtengo fecha actual
+
+        calendar.add(Calendar.HOUR, horas);  // numero de horas a añadir, o restar en caso de horas<0
+
+        return calendar.getTimeInMillis(); // Devuelve el objeto Date con las nuevas horas añadidas
+    }
+
+    public static int convertFromSecondToHour (int seconds) {
+        return (seconds / 60) / 60;
+    }
+
+    public static Date convertFromLocalDateToDate (java.time.LocalDate localDate) {
+        //default time zone
+        ZoneId defaultZoneId = ZoneId.systemDefault();
+
+        //local date + atStartOfDay() + default time zone + toInstant() = Date
+        return Date.from(localDate.atStartOfDay(defaultZoneId).toInstant());
+    }
+
+    public static boolean isExpiredToken(long expirationDate) {
+        if( Calendar.getInstance().getTimeInMillis() > expirationDate) {
+            return true;
+        }
+
+        return false;
+    }
+
     public static DateTime getDateTimeAtCurrentTime(){
-        return LocalDate.now(DateTimeZone.forTimeZone(TimeZone.getTimeZone("UYST"))).toDateTimeAtCurrentTime();
+        return DateTime.now();
     }
 
     public static long plusCurrentTimeMilleSeconds(long plus, DateTimePlusType plusType){
@@ -26,10 +59,10 @@ public class DateTimeUtilsBss {
                     result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis() + plus * 24 *  60  * 1000 ;
                     break;
                 case MINUTE:
-                    result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis() +   plus * 60  * 1000;
+                    result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis() + plus * 60  * 1000;
                     break;
                 case SECOND:
-                    result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis() +  plus * 1000;
+                    result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis() + plus * 1000;
                     break;
                 default:
                     result = DateTimeUtilsBss.getDateTimeAtCurrentTime().getMillis();

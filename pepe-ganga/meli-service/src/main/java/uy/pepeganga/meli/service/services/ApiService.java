@@ -203,7 +203,7 @@ public class ApiService implements IApiService {
             account.setUserId(meliAutheticationResponse.getUserId());
             account.setUserIdBss(meliAutheticationResponse.getUserId());
             account.setRefreshToken(meliAutheticationResponse.getRefreshToken());
-            account.setExpirationDate(DateTimeUtilsBss.plusCurrentTimeMilleSeconds(account.getExpiresIn(), DateTimePlusType.SECOND));
+            account.setExpirationDate(DateTimeUtilsBss.calculateDateTime(DateTimeUtilsBss.convertFromSecondToHour(account.getExpiresIn())));
             account.setStatus(MeliStatusAccount.SYNCHRONIZED.getCode());
             account.setDateLastSynchronization(DateTimeUtilsBss.getLongDateTimeAtCurrentTime());
 

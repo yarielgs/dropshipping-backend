@@ -288,7 +288,7 @@ public class MeliService  implements IMeliService {
             DetailsPublicationsMeliGrid productResponse = new DetailsPublicationsMeliGrid();
             if (accountFounded.isEmpty()) {
                 throw new ApiException(HttpStatus.NOT_FOUND.value(), String.format("No se encontro la cuenta: %s", product.getAccountName()));
-            } else if (MeliUtils.isExpiredToken(accountFounded.get())) {
+            } else if (DateTimeUtilsBss.isExpiredToken(accountFounded.get().getExpirationDate())) {
                 apiService.getTokenByRefreshToken(accountFounded.get());
                 accountFounded = sellerAccountRepository.findById(product.getAccountMeli());
             }
@@ -413,7 +413,7 @@ public class MeliService  implements IMeliService {
                 response.put(MapResponseConstants.ERROR,
                       new ApiMeliModelException(HttpStatus.NOT_FOUND.value(), String.format("Account with id: %s not found", accountId)));
                 return response;
-            } else if (MeliUtils.isExpiredToken(accountFounded.get())) {
+            } else if (DateTimeUtilsBss.isExpiredToken(accountFounded.get().getExpirationDate())) {
                 accountFounded = Optional.ofNullable(apiService.getTokenByRefreshToken(accountFounded.get()));
             }
             Object result = apiService.deletePublication(request, accountFounded.get().getAccessToken(), idPublication);
@@ -556,7 +556,7 @@ public class MeliService  implements IMeliService {
                     response.put(MapResponseConstants.ERROR,
                           new ApiMeliModelException(HttpStatus.NOT_FOUND.value(), String.format("Account with id: %s not found", accountId)));
                 } else {
-                    if (MeliUtils.isExpiredToken(accountFounded.get())) {
+                    if (DateTimeUtilsBss.isExpiredToken(accountFounded.get().getExpirationDate())) {
                         accountFounded = Optional.ofNullable(apiService.getTokenByRefreshToken(accountFounded.get()));
                     }
                     request.setListing_type_id("gold_premium");
@@ -672,7 +672,7 @@ public class MeliService  implements IMeliService {
                       new ApiMeliModelException(HttpStatus.NOT_FOUND.value(), String.format("Account with id: %s not found", accountId)));
             } else {
                 try {
-                    if (MeliUtils.isExpiredToken(accountFounded.get())) {
+                    if (DateTimeUtilsBss.isExpiredToken(accountFounded.get().getExpirationDate())) {
                         accountFounded = Optional.ofNullable(apiService.getTokenByRefreshToken(accountFounded.get()));
                     }
                     Object result = apiService.changeStatusPublications(request, accountFounded.get().getAccessToken(), idPublication);
@@ -761,7 +761,7 @@ public class MeliService  implements IMeliService {
                     ChangePriceRequest changePrice = new ChangePriceRequest(detail.getPricePublication());
                     Optional<SellerAccount> accountFounded = finalAccountList.stream().filter(a -> a.getId() == detail.getAccountMeli()).findFirst();
                     try {
-                        if (MeliUtils.isExpiredToken(accountFounded.get())) {
+                        if (DateTimeUtilsBss.isExpiredToken(accountFounded.get().getExpirationDate())) {
                             accountFounded = Optional.ofNullable(apiService.getTokenByRefreshToken(accountFounded.get()));
                         }
 
@@ -866,7 +866,7 @@ public class MeliService  implements IMeliService {
                     } else {
                         var repo_acc = sellerAccountRepository.findById(pending.getAccountMeli());
                         if (repo_acc.isPresent()) {
-                            if (MeliUtils.isExpiredToken(repo_acc.get())) {
+                            if (DateTimeUtilsBss.isExpiredToken(repo_acc.get().getExpirationDate())) {
                                 repo_acc = Optional.ofNullable(apiService.getTokenByRefreshToken(repo_acc.get()));
                             }
                             accounts.add(repo_acc.get());
@@ -960,7 +960,7 @@ public class MeliService  implements IMeliService {
                                 try {
                                     Optional<SellerAccount> seller = sellerAccountRepository.findById(d.getAccountMeli());
                                     if (seller.isPresent()) {
-                                        if (MeliUtils.isExpiredToken(seller.get())) {
+                                        if (DateTimeUtilsBss.isExpiredToken(seller.get().getExpirationDate())) {
                                             seller = Optional.ofNullable(apiService.getTokenByRefreshToken(seller.get()));
                                         }
                                         accountsMeli.add(seller.get());
@@ -994,7 +994,7 @@ public class MeliService  implements IMeliService {
                             } else {
                                 try {
                                     Optional<SellerAccount> seller1 = accountsMeli.stream().filter(p -> p.getId().equals(d.getAccountMeli())).findFirst();
-                                    if (MeliUtils.isExpiredToken(seller1.get())) {
+                                    if (DateTimeUtilsBss.isExpiredToken(seller1.get().getExpirationDate())) {
                                         seller1 = Optional.ofNullable(apiService.getTokenByRefreshToken(seller1.get()));
 
                                     }
@@ -1058,7 +1058,7 @@ public class MeliService  implements IMeliService {
                 if (accountFounded.isEmpty()) {
                     logger.error("Not Found, Account with id {} not found: ", accountId);
                     throw new Exception(String.format("Account with id: %s not found", accountId));
-                } else if (MeliUtils.isExpiredToken(accountFounded.get())) {
+                } else if (DateTimeUtilsBss.isExpiredToken(accountFounded.get().getExpirationDate())) {
                     accountFounded = Optional.ofNullable(apiService.getTokenByRefreshToken(accountFounded.get()));
                 }
                 for (DetailsPublicationsMeli item : publicationsList) {
@@ -1151,7 +1151,7 @@ public class MeliService  implements IMeliService {
         if (sellerAccount.isEmpty()) {
             throw new NotFoundException("Seller Account Not Found", HttpStatus.NOT_FOUND);
         }
-        if (MeliUtils.isExpiredToken(sellerAccount.get())) {
+        if (DateTimeUtilsBss.isExpiredToken(sellerAccount.get().getExpirationDate())) {
             sellerAccount = Optional.ofNullable(apiService.getTokenByRefreshToken(sellerAccount.get()));
         }
 
@@ -1235,7 +1235,7 @@ public class MeliService  implements IMeliService {
             ChangePriceRequest changePrice = new ChangePriceRequest(detail.getPricePublication());
             Optional<SellerAccount> accountFounded = finalAccountList.stream().filter(a -> a.getId() == detail.getAccountMeli()).findFirst();
             try {
-                if (MeliUtils.isExpiredToken(accountFounded.get())) {
+                if (DateTimeUtilsBss.isExpiredToken(accountFounded.get().getExpirationDate())) {
                     accountFounded = Optional.ofNullable(apiService.getTokenByRefreshToken(accountFounded.get()));
                 }
 
@@ -1324,7 +1324,7 @@ public class MeliService  implements IMeliService {
         try {
             if (accountFounded.isEmpty()) {
                 return false;
-            } else if (MeliUtils.isExpiredToken(accountFounded.get())) {
+            } else if ( DateTimeUtilsBss.isExpiredToken(accountFounded.get().getExpirationDate()) ) {
                 accountFounded = Optional.ofNullable(apiService.getTokenByRefreshToken(accountFounded.get()));
                 accountMeli = accountFounded;
             }
