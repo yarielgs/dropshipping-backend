@@ -25,8 +25,8 @@ feign:
   client:
     config:
       default:
-        connectTimeout: 12000
-        readTimeout: 14000
+        connectTimeout: 300000
+        readTimeout: 300000
 
 hystrix:
   command:

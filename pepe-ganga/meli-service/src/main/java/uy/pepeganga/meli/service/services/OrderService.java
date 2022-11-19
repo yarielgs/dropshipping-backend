@@ -323,9 +323,9 @@ public class OrderService implements IOrderService {
 
                         SellerAccount sellerFounded = sellerAccountRepository.findByUserId(notification.getUserId());
                         if (MeliUtils.isExpiredToken(sellerFounded)) {
-                            apiService.getTokenByRefreshToken(sellerAccountRepository.findByUserId(notification.getUserId()));
+                            sellerFounded = apiService.getTokenByRefreshToken(sellerFounded);
                         }
-                        DMOrder order = processingOrderByNotification(notification);
+                        DMOrder order = processingOrderByNotification(notification, sellerFounded);
                         if (Objects.nonNull(order) ) {
                             if(Objects.nonNull(order.getShipping()) && Objects.nonNull(order.getShipping().getId())){
                                 DMOrderShipping orderShipping = mapper.convertValue(apiService.getShipmentOfOrder(order.getShipping().getId(),
@@ -364,7 +364,7 @@ public class OrderService implements IOrderService {
                         notificationRepository.save(notification);
                         logger.info("Order notification set business attempts to: {} by meli request error before", notification.getBusinessAttempts() + 1);
                     }else if (errorCreating) {
-                        logger.error("Error creating resource order: {}, userId: {}", notification.getResource(), notification.getUserId());
+                        logger.warn("Order with status different to paid cannot be created. Resource: {}, userId: {}", notification.getResource(), notification.getUserId());
                     }
                     else {
                         if (notificationRepository.existsByResource(notification.getResource())) {
@@ -436,9 +436,9 @@ public class OrderService implements IOrderService {
         }
     }
 
-    private DMOrder processingOrderByNotification(Notification notification) throws ApiException, OrderCreateException {
+    private DMOrder processingOrderByNotification(Notification notification, SellerAccount sellerAccount) throws ApiException, OrderCreateException {
         DMOrder order = mapper.convertValue(apiService.getOrderByNotificationResource(notification.getResource(),
-                sellerAccountRepository.findByUserId(notification.getUserId()).getAccessToken()), DMOrder.class);
+              sellerAccount.getAccessToken()), DMOrder.class);
 
         if (Objects.isNull(order)) {
             throw new OrderCreateException(String.format("Order not obtained by resource: %s", notification.getResource()));
@@ -535,6 +535,14 @@ public class OrderService implements IOrderService {
                 if (order.getSeller() != null) {
                     MeliOrderSeller seller = new MeliOrderSeller(order.getSeller().getId(), order.getSeller().getNickname(), order.getSeller().getEmail(), order.getSeller().getFirtsName()
                             , order.getSeller().getLastName());
+
+                    if(order.getSeller().getNickname() == null) {
+                        SellerAccount sa = sellerAccountRepository.findByUserId(seller.getSellerId());
+                        seller.setNickname(sa.getNickname());
+                        seller.setEmail(sa.getEmail());
+                        seller.setFirstsName(sa.getBusinessName());
+                        seller.setLastName("");
+                    }
                     orders.setSeller(orderSellerRepository.save(seller));
                 }
 
@@ -592,7 +600,6 @@ public class OrderService implements IOrderService {
                 });
 
             } else
-                logger.info("Order with status different to paid cannot be created. Order id: {}", order.getId() );
                 throw new OrderCreateException(String.format("Order with status different to paid cannot be created. Order id: %d", order.getId()));
         } catch (Exception e) {
             throw new OrderCreateException(e.getMessage(), e);

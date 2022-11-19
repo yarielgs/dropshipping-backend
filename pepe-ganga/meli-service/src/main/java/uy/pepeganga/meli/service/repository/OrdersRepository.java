@@ -21,7 +21,7 @@ public interface OrdersRepository extends JpaRepository<MeliOrders, Long> {
     MeliOrders findByOrderId(String orderId);
 
     @Transactional(readOnly = true)
-    @Query(value = "select * from meli_orders where sent_to_erp = 0  limit :quantity", nativeQuery = true)
+    @Query(value = "select * from meli_orders where sent_to_erp = 0 limit :quantity", nativeQuery = true)
     List<MeliOrders> findAllBySentToErp(int quantity);
 
     @Transactional(readOnly = true)
